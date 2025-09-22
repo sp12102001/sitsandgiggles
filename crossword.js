@@ -28,18 +28,18 @@ class CrosswordGame {
 
             const csvText = await response.text();
             this.parseCSV(csvText);
-            console.log(`Loaded ${this.data.length} SITS entities`);
-            this.showMessage(`Loaded ${this.data.length} SITS entities from GitHub!`, 'success');
+            console.log(`Loaded ${this.data.length} letter-only SITS entities`);
+            this.showMessage(`Loaded ${this.data.length} letter-only SITS entity codes!`, 'success');
         } catch (error) {
             console.error('Error loading data:', error);
             // Provide fallback sample data for demo purposes
             this.loadSampleData();
-            this.showMessage('Using sample data - deploy to GitHub Pages for full dataset', 'info');
+            this.showMessage('Using sample letter-only SITS codes - deploy to GitHub Pages for full dataset', 'info');
         }
     }
 
     loadSampleData() {
-        // Sample data with real SITS entity codes for demonstration when CSV can't be loaded
+        // Sample data with real letter-only SITS entity codes for demonstration when CSV can't be loaded
         this.data = [
             { code: 'AAC', description: 'AAM Arrangement Constraint - Defines constraints for activity arrangement management.', fullName: 'AAM Arrangement Constraint' },
             { code: 'ABT', description: 'Assessment Batch - Tracks assessment batches available for module assignment and commitment status.', fullName: 'Assessment Batch' },
@@ -54,7 +54,7 @@ class CrosswordGame {
             { code: 'ADP', description: 'Academic Standing Profile - Associates academic standing rules with students/programmes.', fullName: 'Academic Standing Profile' },
             { code: 'ADR', description: 'Assessment Division Requirements - Materials and equipment required for assessment divisions.', fullName: 'Assessment Division Requirements' }
         ];
-        console.log('Loaded sample SITS entities for demonstration');
+        console.log('Loaded sample letter-only SITS entities for demonstration');
     }
 
     parseCSV(csvText) {
@@ -73,7 +73,7 @@ class CrosswordGame {
                 const fullName = columns[fullNameIndex]?.trim();
                 const description = columns[descriptionIndex]?.trim();
 
-                if (entityCode && entityCode.length >= 3 && entityCode.length <= 4) {
+                if (entityCode && entityCode.length >= 3 && entityCode.length <= 4 && /^[A-Z]+$/.test(entityCode)) {
                     // Create a clue that doesn't give away the answer
                     const clue = this.createClue(entityCode, fullName, description);
 
@@ -270,8 +270,12 @@ class CrosswordGame {
             [words[i], words[j]] = [words[j], words[i]];
         }
 
-        // Only use 3-4 character entity codes as requested
-        const validWords = words.filter(w => w.code.length >= 3 && w.code.length <= 4);
+        // Only use 3-4 character entity codes without numbers
+        const validWords = words.filter(w =>
+            w.code.length >= 3 &&
+            w.code.length <= 4 &&
+            /^[A-Z]+$/.test(w.code)
+        );
 
         // Return the first maxWords from the shuffled valid words
         return validWords.slice(0, maxWords);
