@@ -1044,7 +1044,13 @@ class CrosswordGame {
         const inlineToggle = document.getElementById('inlineValidationToggle');
         if (inlineToggle) inlineToggle.addEventListener('change', (e) => { this.inlineValidationEnabled = e.target.checked; });
         const zoomSlider = document.getElementById('zoomSlider');
-        if (zoomSlider) zoomSlider.addEventListener('input', (e) => { const s = parseFloat(e.target.value); const g = document.getElementById('crosswordGrid'); g.style.transform = `scale(${s})`; });
+        if (zoomSlider) zoomSlider.addEventListener('input', (e) => {
+            const s = parseFloat(e.target.value);
+            const clamped = Math.max(0.8, Math.min(1.6, s));
+            const base = 32; // px
+            const size = Math.round(base * clamped);
+            document.documentElement.style.setProperty('--cell-size', size + 'px');
+        });
         const gridSizeSelect = document.getElementById('gridSizeSelect');
         const wordCountSelect = document.getElementById('wordCountSelect');
         if (gridSizeSelect) gridSizeSelect.addEventListener('change', () => this.generateNewCrossword());
@@ -1086,7 +1092,10 @@ class CrosswordGame {
             inlineToggle.checked = enable;
             this.inlineValidationEnabled = enable;
         }
-        if (zoomSlider) zoomSlider.value = '1';
+        if (zoomSlider) {
+            zoomSlider.value = '1';
+            document.documentElement.style.setProperty('--cell-size', '32px');
+        }
     }
 
     // Active clue bar update
