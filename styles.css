@@ -156,9 +156,9 @@ header p {
 
 .crossword-grid {
     display: grid;
-    gap: 2px;
+    gap: 3px;
     background: #f1f5f9;
-    padding: 6px;
+    padding: 8px;
     border-radius: 8px;
     max-width: 100%;
     overflow: auto;
@@ -182,11 +182,11 @@ header p {
 }
 
 .cell.black {
-    background: transparent;
+    background: #1e293b;
     cursor: default;
-    border: none;
-    box-shadow: none;
-    opacity: 0;
+    border: 1px solid #334155;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+    opacity: 1;
     pointer-events: none;
 }
 
@@ -197,9 +197,10 @@ header p {
 }
 
 .cell.current-word {
-    background: #f0f9ff;
-    border-color: #0ea5e9;
-    box-shadow: 0 0 0 1px #7dd3fc;
+    background: #fef3cd;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 2px #fbbf24, 0 2px 4px rgba(245, 158, 11, 0.3);
+    transform: scale(1.02);
 }
 
 .cell.correct {
@@ -383,6 +384,17 @@ header p {
     font-size: 0.9rem;
 }
 
+.word-length {
+    color: #1e40af;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-left: 8px;
+    background: #e0f2fe;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
 /* Stats */
 .stats {
     display: flex;
@@ -495,6 +507,12 @@ header p {
 
     .clue-text {
         font-size: 0.85rem;
+    }
+
+    .word-length {
+        font-size: 0.8rem;
+        margin-left: 6px;
+        padding: 1px 4px;
     }
 
     .stats {

@@ -5,7 +5,7 @@ class CrosswordGame {
         this.crossword = null;
         this.currentWord = null;
         this.userAnswers = {};
-        this.gridSize = 15;
+        this.gridSize = 12;
 
         this.init();
     }
@@ -213,7 +213,7 @@ class CrosswordGame {
     }
 
     createCrossword() {
-        const maxWords = 8; // Reasonable number for good crossword
+        const maxWords = 6; // Smaller number for clearer crossword with 3-4 letter words
         const selectedWords = this.selectWords(maxWords);
         const grid = this.initializeGrid();
         const placedWords = [];
@@ -508,6 +508,7 @@ class CrosswordGame {
         clue.innerHTML = `
             <span class="clue-number">${word.number}.</span>
             <span class="clue-text">${word.description}</span>
+            <span class="word-length">(${word.code.length})</span>
         `;
 
         clue.addEventListener('click', () => {
