@@ -39,16 +39,20 @@ class CrosswordGame {
     }
 
     loadSampleData() {
-        // Sample data for demonstration when CSV can't be loaded
+        // Sample data with real SITS entity codes for demonstration when CSV can't be loaded
         this.data = [
-            { code: 'STU', description: 'Entity for: Student. Core entity representing a student in the system.', fullName: 'Student' },
-            { code: 'COU', description: 'Entity for: Course. Academic course definition and management.', fullName: 'Course' },
-            { code: 'MOD', description: 'Entity for: Module. Individual module within a course structure.', fullName: 'Module' },
-            { code: 'ASS', description: 'Entity for: Assessment. Assessment and examination records.', fullName: 'Assessment' },
-            { code: 'ENR', description: 'Entity for: Enrolment. Student enrolment in courses and modules.', fullName: 'Enrolment' },
-            { code: 'GRD', description: 'Entity for: Grade. Academic grades and marking schemes.', fullName: 'Grade' },
-            { code: 'FEE', description: 'Entity for: Fee. Financial fee structures and payments.', fullName: 'Fee' },
-            { code: 'APP', description: 'Entity for: Application. Student application and admissions.', fullName: 'Application' }
+            { code: 'AAC', description: 'AAM Arrangement Constraint - Defines constraints for activity arrangement management.', fullName: 'AAM Arrangement Constraint' },
+            { code: 'ABT', description: 'Assessment Batch - Tracks assessment batches available for module assignment and commitment status.', fullName: 'Assessment Batch' },
+            { code: 'ACB', description: 'Award Confirmation Rule Body - Individual elements that make up award confirmation rules.', fullName: 'Award Confirmation Rule Body' },
+            { code: 'ACE', description: 'Award Calculation Element - Defines credit minima/maxima and levels for award calculations.', fullName: 'Award Calculation Element' },
+            { code: 'ACI', description: 'Activity Item - Defines individual activity items within the system.', fullName: 'Activity Item' },
+            { code: 'ACM', description: 'Award Calculation Method - Rules for calculating highest possible non-discretionary student awards.', fullName: 'Award Calculation Method' },
+            { code: 'ACP', description: 'Activity Pattern - Defines patterns and structures for activities.', fullName: 'Activity Pattern' },
+            { code: 'ACR', description: 'Award Confirmation Rule - Additional conditions for award classification confirmation.', fullName: 'Award Confirmation Rule' },
+            { code: 'ACT', description: 'Activity - Defines activity types for topic elements and room assignment.', fullName: 'Activity' },
+            { code: 'ADE', description: 'Academic Standing Profile Element - Specifies academic standing calculation methods.', fullName: 'Academic Standing Profile Element' },
+            { code: 'ADP', description: 'Academic Standing Profile - Associates academic standing rules with students/programmes.', fullName: 'Academic Standing Profile' },
+            { code: 'ADR', description: 'Assessment Division Requirements - Materials and equipment required for assessment divisions.', fullName: 'Assessment Division Requirements' }
         ];
         console.log('Loaded sample SITS entities for demonstration');
     }
@@ -596,6 +600,10 @@ class CrosswordGame {
         const input = event.target;
 
         switch (event.key) {
+            case 'Enter':
+                event.preventDefault();
+                this.checkAnswers();
+                break;
             case 'Backspace':
                 if (!input.value) {
                     this.moveToPreviousCell(row, col);
