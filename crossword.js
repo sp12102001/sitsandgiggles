@@ -65,6 +65,8 @@ class CrosswordGame {
             { code: 'ADR', description: 'Assessment Division Requirements - Materials and equipment required for assessment divisions.', fullName: 'Assessment Division Requirements' }
         ];
         console.log('Loaded sample letter-only SITS entities for demonstration');
+        this.codeToEntity = {};
+        this.data.forEach(item => { this.codeToEntity[item.code] = item; });
     }
 
     parseCSV(csvText) {
@@ -102,6 +104,12 @@ class CrosswordGame {
         this.data = this.data.filter((item, index, self) =>
             index === self.findIndex(t => t.code === item.code)
         ).sort((a, b) => b.code.length - a.code.length);
+
+        // Build quick lookup map for alternative-entity messages
+        this.codeToEntity = {};
+        this.data.forEach(item => {
+            this.codeToEntity[item.code] = item;
+        });
     }
 
     parseCSVLine(line) {
@@ -132,41 +140,9 @@ class CrosswordGame {
     }
 
     createClue(entityCode, fullName, description) {
-        // Clean up the description first
-        const cleanDesc = this.cleanDescription(description);
-
-        // Check if description contains the entity code (case insensitive)
-        const codePattern = new RegExp(`\\b${entityCode}\\b`, 'i');
-        const descriptionContainsCode = cleanDesc && codePattern.test(cleanDesc);
-
-        // Create clue based on available data
-        let clue = '';
-
-        if (fullName && fullName !== entityCode) {
-            // Use full name as primary clue
-            clue = `Entity for: ${fullName}`;
-
-            // Add description if it doesn't contain the code
-            if (cleanDesc && !descriptionContainsCode && cleanDesc.length > 20) {
-                // Remove entity code references from description
-                const cleanedDesc = this.removeCodeReferences(cleanDesc, entityCode);
-                if (cleanedDesc.length > 20) {
-                    clue += `. ${cleanedDesc}`;
-                }
-            }
-        } else if (cleanDesc && !descriptionContainsCode && cleanDesc.length > 20) {
-            // Use description only if it doesn't contain the code
-            clue = this.removeCodeReferences(cleanDesc, entityCode);
-        } else {
-            // No good clue available, skip this entry
-            return null;
-        }
-
-        // Final check - make sure the clue doesn't contain the entity code
-        if (new RegExp(`\\b${entityCode}\\b`, 'i').test(clue)) {
-            return null;
-        }
-
+        const clue = this.buildClueFromRaw(entityCode, fullName, description);
+        if (!clue) return null;
+        if (new RegExp(`\\b${entityCode}\\b`, 'i').test(clue)) return null;
         return clue.length > 10 ? clue : null;
     }
 
@@ -203,6 +179,58 @@ class CrosswordGame {
             .trim();
     }
 
+    // Build a less-obvious clue from raw fields
+    buildClueFromRaw(entityCode, fullName, description) {
+        let base = this.cleanDescription(description || '');
+        base = this.removeCodeReferences(base, entityCode);
+        base = this.sanitizeClueText(base, entityCode, fullName);
+        let snippet = this.pickClueSnippet(base);
+        if (!snippet || snippet.length < 20) {
+            // Fallback: very generic, avoids revealing exact names
+            snippet = 'Used to manage records or rules within the system.';
+        }
+        // Final cleanup
+        snippet = snippet.replace(/\s+/g, ' ').trim();
+        return snippet;
+    }
+
+    // Remove acronyms, proper noun phrases, and words from fullName
+    sanitizeClueText(text, entityCode, fullName) {
+        let t = (text || '').replace(/\((?:[^)(]+|\([^)(]*\))*\)/g, ' '); // remove parentheses content
+        // Remove acronyms (2+ uppercase letters)
+        t = t.replace(/\b[A-Z]{2,}\b/g, '…');
+        // Remove sequences of 2+ TitleCase words (likely proper names)
+        t = t.replace(/(?:\b[A-Z][a-z]+\b(?:\s+|$)){2,}/g, '… ');
+        // Remove words from fullName to avoid “too obvious” hints
+        if (fullName) {
+            const words = fullName.split(/\s+/).filter(w => /[A-Za-z]/.test(w) && w.length > 2);
+            words.forEach(w => {
+                const re = new RegExp(`\\b${this.escapeRegExp(w)}\\b`, 'gi');
+                t = t.replace(re, '…');
+            });
+        }
+        // Remove the code if still present
+        t = this.removeCodeReferences(t, entityCode);
+        // Normalize ellipses and spaces
+        t = t.replace(/…{2,}/g, '…').replace(/\s*…\s*/g, ' … ').replace(/\s{2,}/g, ' ');
+        return t.trim();
+    }
+
+    pickClueSnippet(text) {
+        if (!text) return '';
+        const sentences = text.split(/[.!?]/).map(s => s.trim()).filter(Boolean);
+        let s = sentences[0] || text;
+        const words = s.split(/\s+/);
+        if (words.length > 18) {
+            s = words.slice(0, 18).join(' ') + '…';
+        }
+        return s;
+    }
+
+    escapeRegExp(str) {
+        return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
     generateNewCrossword() {
         this.showLoading(true);
         this.userAnswers = {};
@@ -230,7 +258,7 @@ class CrosswordGame {
     }
 
     createCrossword() {
-        const maxWords = 6; // Smaller number for clearer crossword with 3-4 letter words
+        const maxWords = this.maxWords || 6; // configurable number
         const selectedWords = this.selectWords(maxWords);
         const grid = this.initializeGrid();
         const placedWords = [];
@@ -258,15 +286,18 @@ class CrosswordGame {
             const placement = this.findWordPlacement(grid, word, placedWords);
 
             if (placement) {
-                this.placeWord(grid, word, placement.row, placement.col, placement.horizontal, wordNumber);
+                // Reuse number if starting cell already has a number
+                const existing = grid[placement.row][placement.col].number;
+                const n = existing > 0 ? existing : wordNumber;
+                this.placeWord(grid, word, placement.row, placement.col, placement.horizontal, n);
                 placedWords.push({
                     ...word,
                     row: placement.row,
                     col: placement.col,
                     horizontal: placement.horizontal,
-                    number: wordNumber
+                    number: n
                 });
-                wordNumber++;
+                if (existing === 0) wordNumber++;
             }
         }
 
@@ -613,27 +644,10 @@ class CrosswordGame {
             }
         }
 
-        // Add visual indicator to show word direction and length
-        this.showWordInfo(word);
+        // Disable floating overlay to avoid zoom conflicts
     }
 
-    showWordInfo(word) {
-        // Create or update a floating info display
-        let wordInfo = document.getElementById('word-info');
-        if (!wordInfo) {
-            wordInfo = document.createElement('div');
-            wordInfo.id = 'word-info';
-            wordInfo.className = 'word-info-display';
-            document.querySelector('.crossword-container').appendChild(wordInfo);
-        }
-
-        const direction = word.horizontal ? 'Across' : 'Down';
-        wordInfo.innerHTML = `
-            <div class="word-direction">${direction}</div>
-            <div class="word-length-info">${word.code.length} letters</div>
-        `;
-        wordInfo.style.display = 'block';
-    }
+    showWordInfo(word) { /* overlay disabled */ }
 
     clearWordInfo() {
         const wordInfo = document.getElementById('word-info');
@@ -696,6 +710,13 @@ class CrosswordGame {
                     this.validateWordIfComplete(this.currentWord, true);
                 } else {
                     this.checkAnswers();
+                }
+                if (this.currentWord) {
+                    const typed = this.getTypedCodeForWord(this.currentWord);
+                    if (typed && typed.length === this.currentWord.code.length && typed !== this.currentWord.code && this.codeToEntity && this.codeToEntity[typed]) {
+                        const alt = this.codeToEntity[typed];
+                        this.showMessage(`No, that's ${alt.fullName}.`, 'info');
+                    }
                 }
                 break;
             case 'Backspace':
@@ -779,6 +800,7 @@ class CrosswordGame {
     checkAnswers() {
         let correct = 0;
         let total = 0;
+        let shownAlt = false;
 
         document.querySelectorAll('.cell').forEach(cell => {
             cell.classList.remove('correct', 'incorrect');
@@ -800,6 +822,16 @@ class CrosswordGame {
                     if (cell) cell.classList.add('correct');
                 } else if (userAnswer) {
                     if (cell) cell.classList.add('incorrect');
+                }
+            }
+
+            // If fully filled but wrong, and matches another entity code, show message once
+            if (!shownAlt) {
+                const typed = this.getTypedCodeForWord(word);
+                if (typed && typed.length === word.code.length && typed !== word.code && this.codeToEntity && this.codeToEntity[typed]) {
+                    const alt = this.codeToEntity[typed];
+                    this.showMessage(`No, that's ${alt.fullName}.`, 'info');
+                    shownAlt = true;
                 }
             }
         });
@@ -1207,11 +1239,29 @@ class CrosswordGame {
         this.saveToLocalStorage();
     }
 
+    // Build typed code for a word
+    getTypedCodeForWord(word) {
+        let s = '';
+        for (let i = 0; i < word.code.length; i++) {
+            const cellRow = word.horizontal ? word.row : word.row + i;
+            const cellCol = word.horizontal ? word.col + i : word.col;
+            const key = `${cellRow}-${cellCol}`;
+            s += (this.userAnswers[key] || '');
+        }
+        return s;
+    }
+
     // On-screen keyboard
     buildOnScreenKeyboard() {
         const osk = document.getElementById('onScreenKeyboard');
         if (!osk) return;
         osk.innerHTML = '';
+        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (!isTouch) {
+            osk.classList.remove('active');
+            return;
+        }
+        osk.classList.add('active');
         const keys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
         keys.forEach(k => {
             const btn = document.createElement('button');
