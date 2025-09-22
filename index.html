@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entity Code Crossword</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Entity Code Crossword <span class="sits-badge">SITS</span></h1>
+            <p>Test your knowledge of Student Information Technology System (SITS) entity codes!</p>
+        </header>
+
+        <div class="controls">
+            <button id="newGameBtn" class="btn primary">🎲 Generate New Crossword</button>
+            <button id="checkAnswersBtn" class="btn">✅ Check Answers</button>
+            <button id="showSolutionBtn" class="btn">💡 Show Solution</button>
+            <button id="saveGameBtn" class="btn">💾 Save Progress</button>
+            <button id="loadGameBtn" class="btn">📂 Load Progress</button>
+            <button id="exportBtn" class="btn">📤 Export PDF</button>
+        </div>
+
+        <div class="game-area">
+            <div class="crossword-container">
+                <div id="crosswordGrid" class="crossword-grid"></div>
+                <div id="loadingMessage" class="loading">🔄 Generating crossword...</div>
+            </div>
+
+            <div class="clues-container">
+                <div class="clues-section">
+                    <h3>📍 Across</h3>
+                    <div id="acrossClues" class="clues-list"></div>
+                </div>
+                <div class="clues-section">
+                    <h3>📍 Down</h3>
+                    <div id="downClues" class="clues-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <span id="correctCount">0</span>
+                <label>Correct</label>
+            </div>
+            <div class="stat-item">
+                <span id="totalCount">0</span>
+                <label>Total</label>
+            </div>
+            <div class="stat-item">
+                <span id="accuracy">0%</span>
+                <label>Accuracy</label>
+            </div>
+        </div>
+
+        <div class="info">
+            <p>💡 <strong>How to play:</strong> Click on a numbered cell to see the SITS entity description. Type the
+                corresponding entity code (e.g., STU, COU, MOD). Generate new puzzles to test different areas of the
+                Student Information Technology System!</p>
+        </div>
+    </div>
+
+    <!-- File input for loading saved games -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <script src="crossword.js"></script>
+</body>
+
+</html>

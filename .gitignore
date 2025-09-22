@@ -1,0 +1,26 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Development files
+clean_csv.py
+clean_men_ent.py
+
+# Original uncleaned data (keep cleaned versions)
+men_ent (1).CSV
+ALL_FLD(in).csv
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.log
