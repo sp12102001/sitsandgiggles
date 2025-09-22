@@ -69,7 +69,7 @@ class CrosswordGame {
                 const fullName = columns[fullNameIndex]?.trim();
                 const description = columns[descriptionIndex]?.trim();
 
-                if (entityCode && entityCode.length >= 2) {
+                if (entityCode && entityCode.length >= 3 && entityCode.length <= 4) {
                     // Create a clue that doesn't give away the answer
                     const clue = this.createClue(entityCode, fullName, description);
 
@@ -257,9 +257,8 @@ class CrosswordGame {
     }
 
     selectWords(maxWords) {
-        // Select a diverse set of words for the crossword
+        // Select words for the crossword - only use 3-4 character entity codes
         const words = [...this.data];
-        const selected = [];
 
         // Shuffle the array
         for (let i = words.length - 1; i > 0; i--) {
@@ -267,23 +266,11 @@ class CrosswordGame {
             [words[i], words[j]] = [words[j], words[i]];
         }
 
-        // Select words of varying lengths
-        const lengthGroups = {
-            short: words.filter(w => w.code.length >= 3 && w.code.length <= 4),
-            medium: words.filter(w => w.code.length >= 5 && w.code.length <= 7),
-            long: words.filter(w => w.code.length >= 8)
-        };
+        // Only use 3-4 character entity codes as requested
+        const validWords = words.filter(w => w.code.length >= 3 && w.code.length <= 4);
 
-        // Pick from each group
-        const groups = ['long', 'medium', 'short'];
-        for (const group of groups) {
-            const available = lengthGroups[group];
-            const count = Math.min(Math.ceil(maxWords / 3), available.length);
-            selected.push(...available.slice(0, count));
-            if (selected.length >= maxWords) break;
-        }
-
-        return selected.slice(0, maxWords);
+        // Return the first maxWords from the shuffled valid words
+        return validWords.slice(0, maxWords);
     }
 
     initializeGrid() {

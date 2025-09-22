@@ -68,24 +68,17 @@ header h1 {
     text-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
 }
 
-header h1 .sits-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-size: 0.7em;
-    font-weight: 600;
-    margin-left: 12px;
-    vertical-align: middle;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
 
 header p {
     font-size: 1.1rem;
     color: #64748b;
     font-weight: 500;
     margin-bottom: 0;
+}
+
+/* Hidden file input */
+.hidden-file-input {
+    display: none;
 }
 
 /* Controls */

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entity Code Crossword</title>
+    <title>SITS Entity Code Crossword</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,8 +14,9 @@
 <body>
     <div class="container">
         <header>
-            <h1>Entity Code Crossword <span class="sits-badge">SITS</span></h1>
-            <p>Test your knowledge of Student Information Technology System (SITS) entity codes!</p>
+            <h1>SITS Entity Code Crossword</h1>
+            <p>Test your knowledge of <strong>Student Information Technology System (SITS)</strong> with 3-4 letter
+                entity codes!</p>
         </header>
 
         <div class="controls">
@@ -62,13 +63,15 @@
 
         <div class="info">
             <p>💡 <strong>How to play:</strong> Click on a numbered cell to see the SITS entity description. Type the
-                corresponding entity code (e.g., STU, COU, MOD). Generate new puzzles to test different areas of the
+                corresponding 3-4 letter entity code (e.g., STU, COU, MOD, ASSP). Generate new puzzles to test different
+                areas of the
                 Student Information Technology System!</p>
         </div>
     </div>
 
     <!-- File input for loading saved games -->
-    <input type="file" id="fileInput" accept=".json" style="display: none;">
+    <label for="fileInput" class="hidden-file-input">Load saved game file</label>
+    <input type="file" id="fileInput" accept=".json" class="hidden-file-input" title="Select a saved game file to load">
 
     <script src="crossword.js"></script>
 </body>

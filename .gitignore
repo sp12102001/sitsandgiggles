@@ -6,6 +6,8 @@ __pycache__/
 # Development files
 clean_csv.py
 clean_men_ent.py
+files/*
+
 
 # Original uncleaned data (keep cleaned versions)
 men_ent (1).CSV

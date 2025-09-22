@@ -1,10 +1,10 @@
-# 🎯 Entity Code Crossword
+# 🎯 SITS Entity Code Crossword
 
-A dynamic crossword puzzle game that generates random crosswords based on entity codes and their descriptions from your database. Players guess entity codes based on descriptive clues.
+A dynamic crossword puzzle game that generates random crosswords based on SITS (Student Information Technology System) entity codes and their descriptions. Players guess 3-4 letter entity codes based on descriptive clues from the SITS database.
 
 ## 🚀 Features
 
-- **Random Crossword Generation**: Creates new puzzles using entity codes and descriptions
+- **Random Crossword Generation**: Creates new puzzles using 3-4 letter SITS entity codes and descriptions
 - **Interactive Grid**: Click and type to fill in answers
 - **Smart Navigation**: Use keyboard arrows or click clues to navigate
 - **Answer Checking**: Instantly verify your answers
@@ -12,12 +12,13 @@ A dynamic crossword puzzle game that generates random crosswords based on entity
 - **Save/Load Progress**: Export and import your game state
 - **Print/Export**: Generate PDF-ready version for offline solving
 - **Responsive Design**: Works on desktop and mobile devices
+- **SITS Focus**: Uses authentic Student Information Technology System entity codes
 
 ## 🎮 How to Play
 
 1. **Generate a New Crossword**: Click "Generate New Crossword" to create a random puzzle
-2. **Read the Clues**: View descriptions in the "Across" and "Down" sections
-3. **Enter Answers**: Click on numbered cells and type the entity codes
+2. **Read the Clues**: View SITS entity descriptions in the "Across" and "Down" sections
+3. **Enter Answers**: Click on numbered cells and type the 3-4 letter SITS entity codes (e.g., STU, COU, MOD)
 4. **Navigate**: Use arrow keys or click clues to move between words
 5. **Check Progress**: Use "Check Answers" to see correct/incorrect entries
 6. **Get Help**: Use "Show Solution" if you're stuck
@@ -28,7 +29,7 @@ A dynamic crossword puzzle game that generates random crosswords based on entity
 - `index.html` - Main game interface
 - `styles.css` - Game styling and responsive design
 - `crossword.js` - Game logic and crossword generation
-- `men_ent_cleaned.csv` - Entity data (codes and descriptions)
+- `men_ent_cleaned.csv` - SITS entity data (3-4 letter codes and descriptions)
 - `README.md` - This documentation
 
 ## 🌐 GitHub Pages Setup
@@ -53,8 +54,9 @@ A dynamic crossword puzzle game that generates random crosswords based on entity
 
 ### Data Format
 The game reads from `men_ent_cleaned.csv` with the following structure:
-- Column B (index 1): Entity Code (e.g., "AA1", "ABT", "ACM")
-- Column AC (index 28): Description/Developer Help text
+- Column B (index 1): SITS Entity Code (only 3-4 character codes like "STU", "COU", "MOD", "ASSP")
+- Column AC (index 28): Entity description/Developer Help text
+- Automatically filters to include only 3-4 letter entity codes for optimal crossword gameplay
 
 ### Browser Compatibility
 - Modern browsers (Chrome, Firefox, Safari, Edge)
@@ -62,14 +64,15 @@ The game reads from `men_ent_cleaned.csv` with the following structure:
 - Local file access needed for CSV loading
 
 ### Performance
-- Optimized for ~900 entity records
-- Generates 6-8 word crosswords for optimal playability
+- Optimized for SITS entity records (filtered to 3-4 character codes only)
+- Generates 6-8 word crosswords using only 3-4 letter SITS entity codes
 - Responsive grid layout adapts to screen size
+- Improved performance by filtering out longer entity codes
 
 ## 🎯 Game Mechanics
 
 ### Crossword Generation Algorithm
-1. **Word Selection**: Chooses 6-8 entity codes of varying lengths
+1. **Word Selection**: Chooses 6-8 SITS entity codes (3-4 characters only)
 2. **Grid Placement**: Places first word horizontally in center
 3. **Intersection Finding**: Attempts to intersect subsequent words with placed words
 4. **Conflict Resolution**: Ensures no letter conflicts in shared cells
@@ -100,7 +103,7 @@ Replace `men_ent_cleaned.csv` with your own data:
 Adjust game parameters in `crossword.js`:
 - `maxWords`: Number of words per crossword (default: 8)
 - `gridSize`: Grid dimensions (default: 15x15)
-- Word length filtering in `selectWords()` method
+- Entity code filtering: Fixed to 3-4 character SITS codes for consistency
 
 ## 📱 Mobile Support
 

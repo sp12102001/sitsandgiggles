@@ -1,4 +1,6 @@
-# SITS Crossword - Setup Instructions
+# SITS Entity Code Crossword - Setup Instructions
+
+**SITS** = Student Information Technology System
 
 ## 🚀 GitHub Pages Deployment
 
@@ -24,7 +26,8 @@ Visit: `https://yourusername.github.io/sitscrossword`
 
 ## 🎯 Features
 ✅ **Clean White Design** - Professional interface
-✅ **SITS Branded** - Student Information Technology System focus
+✅ **SITS Focused** - Student Information Technology System entity codes
+✅ **3-4 Character Codes Only** - Optimal crossword gameplay with short entity codes
 ✅ **Auto Data Loading** - Automatically loads CSV from GitHub Pages
 ✅ **Responsive** - Works on desktop and mobile
 ✅ **Smart Clues** - No answer spoilers in descriptions
@@ -37,7 +40,7 @@ Visit: `https://yourusername.github.io/sitscrossword`
 
 ## 🔧 Customization
 - **Colors**: Modify CSS custom properties in `styles.css`
-- **Data**: Replace `men_ent_cleaned.csv` with your entity data
+- **Data**: Replace `men_ent_cleaned.csv` with your SITS entity data (3-4 character codes recommended)
 - **Branding**: Update title and descriptions in `index.html`
 
 ## 📱 Browser Support
