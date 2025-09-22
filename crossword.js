@@ -4,8 +4,14 @@ class CrosswordGame {
         this.data = [];
         this.crossword = null;
         this.currentWord = null;
+        this.currentCell = { row: null, col: null };
         this.userAnswers = {};
         this.gridSize = 12;
+        this.maxWords = 6;
+        this.inlineValidationEnabled = false;
+        this.seed = this.getInitialSeed ? this.getInitialSeed() : Math.floor(Date.now());
+        this.randomGenerator = this.createRNG ? this.createRNG(this.seed) : null;
+        this.theme = this.getInitialTheme ? this.getInitialTheme() : 'light';
 
         this.init();
     }
@@ -13,7 +19,11 @@ class CrosswordGame {
     async init() {
         await this.loadData();
         this.setupEventListeners();
-        this.generateNewCrossword();
+        if (this.applyInitialControlsState) this.applyInitialControlsState();
+        if (this.applyTheme) this.applyTheme(this.theme);
+        if (!(this.restoreFromLocalStorage && this.restoreFromLocalStorage())) {
+            this.generateNewCrossword();
+        }
     }
 
     async loadData() {
@@ -196,14 +206,21 @@ class CrosswordGame {
     generateNewCrossword() {
         this.showLoading(true);
         this.userAnswers = {};
+        this.currentWord = null;
+        this.currentCell = { row: null, col: null };
 
         setTimeout(() => {
             try {
+                const gridSizeSelect = document.getElementById('gridSizeSelect');
+                const wordCountSelect = document.getElementById('wordCountSelect');
+                if (gridSizeSelect) this.gridSize = parseInt(gridSizeSelect.value, 10) || this.gridSize;
+                if (wordCountSelect) this.maxWords = parseInt(wordCountSelect.value, 10) || this.maxWords;
                 this.crossword = this.createCrossword();
                 this.renderCrossword();
                 this.updateStats();
                 this.showLoading(false);
                 this.showMessage('New SITS crossword generated!', 'success');
+                if (this.saveToLocalStorage) this.saveToLocalStorage();
             } catch (error) {
                 console.error('Error generating crossword:', error);
                 this.showMessage('Error generating crossword', 'error');
@@ -266,7 +283,7 @@ class CrosswordGame {
 
         // Shuffle the array
         for (let i = words.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
+            const j = Math.floor((this.random ? this.random() : Math.random()) * (i + 1));
             [words[i], words[j]] = [words[j], words[i]];
         }
 
@@ -331,13 +348,13 @@ class CrosswordGame {
 
         // If no intersection found, try random placement
         for (let attempt = 0; attempt < attempts; attempt++) {
-            const horizontal = Math.random() < 0.5;
+            const horizontal = (this.random ? this.random() : Math.random()) < 0.5;
             const maxRow = horizontal ? this.gridSize - 1 : this.gridSize - word.code.length;
             const maxCol = horizontal ? this.gridSize - word.code.length : this.gridSize - 1;
 
             if (maxRow >= 0 && maxCol >= 0) {
-                const row = Math.floor(Math.random() * (maxRow + 1));
-                const col = Math.floor(Math.random() * (maxCol + 1));
+                const row = Math.floor((this.random ? this.random() : Math.random()) * (maxRow + 1));
+                const col = Math.floor((this.random ? this.random() : Math.random()) * (maxCol + 1));
                 const placement = { row, col, horizontal };
 
                 if (this.canPlaceWord(grid, word.code, placement)) {
@@ -420,6 +437,10 @@ class CrosswordGame {
 
         // Set grid layout
         gridElement.style.gridTemplateColumns = `repeat(${this.gridSize}, 1fr)`;
+        gridElement.setAttribute('role', 'grid');
+        gridElement.setAttribute('aria-rowcount', String(this.gridSize));
+        gridElement.setAttribute('aria-colcount', String(this.gridSize));
+        gridElement.style.transformOrigin = 'top left';
         gridElement.innerHTML = '';
 
         // Create grid cells
@@ -432,6 +453,7 @@ class CrosswordGame {
 
         // Render clues
         this.renderClues(acrossClues, downClues);
+        if (this.buildOnScreenKeyboard) this.buildOnScreenKeyboard();
     }
 
     createCell(row, col) {
@@ -461,9 +483,23 @@ class CrosswordGame {
         input.className = 'cell-input';
         input.type = 'text';
         input.maxLength = 1;
+        input.setAttribute('inputmode', 'text');
+        input.setAttribute('autocomplete', 'off');
+        input.setAttribute('autocorrect', 'off');
+        input.setAttribute('autocapitalize', 'characters');
+        input.setAttribute('spellcheck', 'false');
         input.addEventListener('input', (e) => this.handleInput(e, row, col));
         input.addEventListener('focus', () => this.highlightWord(row, col));
         input.addEventListener('keydown', (e) => this.handleKeydown(e, row, col));
+
+        // Accessibility label
+        const membership = this.getCellMembership ? this.getCellMembership(row, col) : [];
+        const labelParts = [`Row ${row + 1}`, `Column ${col + 1}`];
+        if (membership.length) {
+            const info = membership.map(m => `${m.direction} ${m.number}, letter ${m.index + 1} of ${m.length}`).join(' | ');
+            labelParts.push(info);
+        }
+        input.setAttribute('aria-label', labelParts.join(', '));
 
         // Set saved answer if exists
         const cellKey = `${row}-${col}`;
@@ -509,7 +545,9 @@ class CrosswordGame {
         clue.dataset.number = word.number;
         clue.dataset.horizontal = word.horizontal;
 
+        const directionText = word.horizontal ? 'Across' : 'Down';
         clue.innerHTML = `
+            <span class="clue-meta">${word.number} ${directionText}</span>
             <span class="clue-text">${word.description}</span>
             <span class="word-length">(${word.code.length})</span>
         `;
@@ -517,6 +555,7 @@ class CrosswordGame {
         clue.addEventListener('click', () => {
             this.highlightWordByNumber(word.number, word.horizontal);
             this.focusWordStart(word);
+            if (this.updateActiveClueBar) this.updateActiveClueBar(word);
         });
 
         return clue;
@@ -539,8 +578,10 @@ class CrosswordGame {
         const word = this.findWordAtPosition(row, col);
         if (word) {
             this.currentWord = word;
+            this.currentCell = { row, col };
             this.highlightWordCells(word);
             this.highlightClue(word.number, word.horizontal);
+            if (this.updateActiveClueBar) this.updateActiveClueBar(word);
         }
     }
 
@@ -613,6 +654,7 @@ class CrosswordGame {
         if (word) {
             this.highlightWordCells(word);
             this.currentWord = word;
+            if (this.updateActiveClueBar) this.updateActiveClueBar(word);
         }
     }
 
@@ -630,6 +672,7 @@ class CrosswordGame {
         // Store the answer
         const cellKey = `${row}-${col}`;
         this.userAnswers[cellKey] = value;
+        this.currentCell = { row, col };
 
         // Move to next cell
         if (value && this.currentWord) {
@@ -637,6 +680,10 @@ class CrosswordGame {
         }
 
         this.updateStats();
+        if (this.inlineValidationEnabled && this.currentWord && this.validateWordIfComplete) {
+            this.validateWordIfComplete(this.currentWord);
+        }
+        if (this.saveToLocalStorage) this.saveToLocalStorage();
     }
 
     handleKeydown(event, row, col) {
@@ -645,7 +692,11 @@ class CrosswordGame {
         switch (event.key) {
             case 'Enter':
                 event.preventDefault();
-                this.checkAnswers();
+                if (this.inlineValidationEnabled && this.currentWord && this.validateWordIfComplete) {
+                    this.validateWordIfComplete(this.currentWord, true);
+                } else {
+                    this.checkAnswers();
+                }
                 break;
             case 'Backspace':
                 if (!input.value) {
@@ -667,6 +718,14 @@ class CrosswordGame {
             case 'ArrowUp':
                 event.preventDefault();
                 this.moveToPreviousCell(row, col, false);
+                break;
+            case 'Tab':
+                event.preventDefault();
+                if (this.focusAdjacentClue) this.focusAdjacentClue(!event.shiftKey);
+                break;
+            case ' ': // Spacebar
+                event.preventDefault();
+                if (this.toggleDirection) this.toggleDirection(row, col);
                 break;
         }
     }
@@ -767,6 +826,7 @@ class CrosswordGame {
 
         this.updateStats();
         this.showMessage('Solution revealed!', 'info');
+        if (this.saveToLocalStorage) this.saveToLocalStorage();
     }
 
     updateStats() {
@@ -923,6 +983,13 @@ class CrosswordGame {
         const message = document.createElement('div');
         message.className = `message ${type}`;
         message.textContent = text;
+        if (type === 'error') {
+            message.setAttribute('role', 'alert');
+            message.setAttribute('aria-live', 'assertive');
+        } else {
+            message.setAttribute('role', 'status');
+            message.setAttribute('aria-live', 'polite');
+        }
         document.body.appendChild(message);
 
         // Show message
@@ -942,6 +1009,335 @@ class CrosswordGame {
         document.getElementById('saveGameBtn').addEventListener('click', () => this.saveGame());
         document.getElementById('loadGameBtn').addEventListener('click', () => this.loadGame());
         document.getElementById('exportBtn').addEventListener('click', () => this.exportToPDF());
+        const inlineToggle = document.getElementById('inlineValidationToggle');
+        if (inlineToggle) inlineToggle.addEventListener('change', (e) => { this.inlineValidationEnabled = e.target.checked; });
+        const zoomSlider = document.getElementById('zoomSlider');
+        if (zoomSlider) zoomSlider.addEventListener('input', (e) => { const s = parseFloat(e.target.value); const g = document.getElementById('crosswordGrid'); g.style.transform = `scale(${s})`; });
+        const gridSizeSelect = document.getElementById('gridSizeSelect');
+        const wordCountSelect = document.getElementById('wordCountSelect');
+        if (gridSizeSelect) gridSizeSelect.addEventListener('change', () => this.generateNewCrossword());
+        if (wordCountSelect) wordCountSelect.addEventListener('change', () => this.generateNewCrossword());
+        const clearWordBtn = document.getElementById('clearWordBtn');
+        const revealLetterBtn = document.getElementById('revealLetterBtn');
+        const revealWordBtn = document.getElementById('revealWordBtn');
+        if (clearWordBtn) clearWordBtn.addEventListener('click', () => this.clearCurrentWord && this.clearCurrentWord());
+        if (revealLetterBtn) revealLetterBtn.addEventListener('click', () => this.revealLetter && this.revealLetter());
+        if (revealWordBtn) revealWordBtn.addEventListener('click', () => this.revealWord && this.revealWord());
+        const shareLinkBtn = document.getElementById('shareLinkBtn');
+        if (shareLinkBtn) shareLinkBtn.addEventListener('click', () => this.copyShareLink && this.copyShareLink());
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) themeToggle.addEventListener('click', () => this.toggleTheme && this.toggleTheme());
+    }
+
+    // Initialize controls from URL or defaults
+    applyInitialControlsState() {
+        const params = new URLSearchParams(window.location.search);
+        const gridParam = parseInt(params.get('grid') || '', 10);
+        const wordsParam = parseInt(params.get('words') || '', 10);
+        const inlineParam = params.get('inline');
+
+        const gridSizeSelect = document.getElementById('gridSizeSelect');
+        const wordCountSelect = document.getElementById('wordCountSelect');
+        const inlineToggle = document.getElementById('inlineValidationToggle');
+        const zoomSlider = document.getElementById('zoomSlider');
+
+        if (!isNaN(gridParam) && gridSizeSelect) {
+            gridSizeSelect.value = String(gridParam);
+            this.gridSize = gridParam;
+        }
+        if (!isNaN(wordsParam) && wordCountSelect) {
+            wordCountSelect.value = String(wordsParam);
+            this.maxWords = wordsParam;
+        }
+        if (inlineParam && inlineToggle) {
+            const enable = inlineParam === '1' || inlineParam === 'true';
+            inlineToggle.checked = enable;
+            this.inlineValidationEnabled = enable;
+        }
+        if (zoomSlider) zoomSlider.value = '1';
+    }
+
+    // Active clue bar update
+    updateActiveClueBar(word) {
+        const bar = document.getElementById('activeClueBar');
+        if (!bar || !word) return;
+        const directionText = word.horizontal ? 'Across' : 'Down';
+        bar.innerHTML = `<span class="clue-number">${word.number}</span><span class="clue-direction">${directionText}</span><span class="clue-text">${word.description}</span><span class="clue-length">(${word.code.length})</span>`;
+    }
+
+    // Membership of a cell across/down
+    getCellMembership(row, col) {
+        const memberships = [];
+        if (!this.crossword || !this.crossword.words) return memberships;
+        const across = this.crossword.words.find(w => w.horizontal && w.row === row && col >= w.col && col < w.col + w.code.length);
+        if (across) {
+            memberships.push({ direction: 'Across', number: across.number, length: across.code.length, index: col - across.col, row: across.row, col: across.col });
+        }
+        const down = this.crossword.words.find(w => !w.horizontal && w.col === col && row >= w.row && row < w.row + w.code.length);
+        if (down) {
+            memberships.push({ direction: 'Down', number: down.number, length: down.code.length, index: row - down.row, row: down.row, col: down.col });
+        }
+        return memberships;
+    }
+
+    // Toggle direction at current cell
+    toggleDirection(row, col) {
+        if (row == null || col == null) {
+            row = this.currentCell.row;
+            col = this.currentCell.col;
+        }
+        if (row == null || col == null) return;
+        const options = this.getCellMembership(row, col);
+        if (!options.length) return;
+        if (!this.currentWord) {
+            const initial = options.find(o => o.direction === 'Across') || options[0];
+            this.highlightWordByNumber(initial.number, initial.direction === 'Across');
+            this.focusWordStart(this.currentWord);
+            return;
+        }
+        const other = options.find(o => (this.currentWord.horizontal ? o.direction === 'Down' : o.direction === 'Across'));
+        if (other) {
+            this.highlightWordByNumber(other.number, other.direction === 'Across');
+            // Focus same index position within new word
+            const newRow = other.direction === 'Across' ? other.row : other.row + other.index;
+            const newCol = other.direction === 'Across' ? other.col + other.index : other.col;
+            const input = document.querySelector(`[data-row="${newRow}"][data-col="${newCol}"] input`);
+            if (input) input.focus();
+        }
+    }
+
+    // Inline validation when a word is complete
+    validateWordIfComplete(word, force = false) {
+        let filled = 0;
+        for (let i = 0; i < word.code.length; i++) {
+            const cellRow = word.horizontal ? word.row : word.row + i;
+            const cellCol = word.horizontal ? word.col + i : word.col;
+            const key = `${cellRow}-${cellCol}`;
+            if ((this.userAnswers[key] || '').length === 1) filled++;
+        }
+        if (!force && filled !== word.code.length) return;
+        // Clear marks
+        for (let i = 0; i < word.code.length; i++) {
+            const cellRow = word.horizontal ? word.row : word.row + i;
+            const cellCol = word.horizontal ? word.col + i : word.col;
+            const cell = document.querySelector(`[data-row="${cellRow}"][data-col="${cellCol}"]`);
+            if (cell) cell.classList.remove('correct', 'incorrect');
+        }
+        // Apply marks
+        for (let i = 0; i < word.code.length; i++) {
+            const cellRow = word.horizontal ? word.row : word.row + i;
+            const cellCol = word.horizontal ? word.col + i : word.col;
+            const key = `${cellRow}-${cellCol}`;
+            const userAnswer = this.userAnswers[key] || '';
+            const correctAnswer = word.code[i];
+            const cell = document.querySelector(`[data-row="${cellRow}"][data-col="${cellCol}"]`);
+            if (userAnswer === correctAnswer) {
+                if (cell) cell.classList.add('correct');
+            } else if (userAnswer) {
+                if (cell) cell.classList.add('incorrect');
+            }
+        }
+    }
+
+    // Tab navigation between clues
+    focusAdjacentClue(forward = true) {
+        if (!this.crossword || !this.crossword.words.length) return;
+        const ordered = [...this.crossword.words].sort((a, b) => a.number - b.number || (a.horizontal === b.horizontal ? 0 : a.horizontal ? -1 : 1));
+        let idx = 0;
+        if (this.currentWord) {
+            const curIdx = ordered.findIndex(w => w.number === this.currentWord.number && w.horizontal === this.currentWord.horizontal);
+            idx = curIdx === -1 ? 0 : curIdx;
+        }
+        const nextIdx = (idx + (forward ? 1 : -1) + ordered.length) % ordered.length;
+        const nextWord = ordered[nextIdx];
+        this.highlightWordByNumber(nextWord.number, nextWord.horizontal);
+        this.focusWordStart(nextWord);
+        this.updateActiveClueBar(nextWord);
+    }
+
+    // Editing helpers
+    clearCurrentWord() {
+        if (!this.currentWord) return;
+        for (let i = 0; i < this.currentWord.code.length; i++) {
+            const cellRow = this.currentWord.horizontal ? this.currentWord.row : this.currentWord.row + i;
+            const cellCol = this.currentWord.horizontal ? this.currentWord.col + i : this.currentWord.col;
+            const key = `${cellRow}-${cellCol}`;
+            this.userAnswers[key] = '';
+            const input = document.querySelector(`[data-row="${cellRow}"][data-col="${cellCol}"] input`);
+            const cell = document.querySelector(`[data-row="${cellRow}"][data-col="${cellCol}"]`);
+            if (input) input.value = '';
+            if (cell) cell.classList.remove('correct', 'incorrect');
+        }
+        this.updateStats();
+        this.saveToLocalStorage();
+    }
+
+    revealLetter() {
+        if (!this.currentWord) return;
+        for (let i = 0; i < this.currentWord.code.length; i++) {
+            const cellRow = this.currentWord.horizontal ? this.currentWord.row : this.currentWord.row + i;
+            const cellCol = this.currentWord.horizontal ? this.currentWord.col + i : this.currentWord.col;
+            const key = `${cellRow}-${cellCol}`;
+            const correctAnswer = this.currentWord.code[i];
+            if (!(this.userAnswers[key] || '')) {
+                this.userAnswers[key] = correctAnswer;
+                const input = document.querySelector(`[data-row="${cellRow}"][data-col="${cellCol}"] input`);
+                if (input) input.value = correctAnswer;
+                break;
+            }
+        }
+        this.updateStats();
+        if (this.inlineValidationEnabled) this.validateWordIfComplete(this.currentWord);
+        this.saveToLocalStorage();
+    }
+
+    revealWord() {
+        if (!this.currentWord) return;
+        for (let i = 0; i < this.currentWord.code.length; i++) {
+            const cellRow = this.currentWord.horizontal ? this.currentWord.row : this.currentWord.row + i;
+            const cellCol = this.currentWord.horizontal ? this.currentWord.col + i : this.currentWord.col;
+            const key = `${cellRow}-${cellCol}`;
+            const correctAnswer = this.currentWord.code[i];
+            this.userAnswers[key] = correctAnswer;
+            const input = document.querySelector(`[data-row="${cellRow}"][data-col="${cellCol}"] input`);
+            if (input) input.value = correctAnswer;
+        }
+        this.updateStats();
+        if (this.inlineValidationEnabled) this.validateWordIfComplete(this.currentWord, true);
+        this.saveToLocalStorage();
+    }
+
+    // On-screen keyboard
+    buildOnScreenKeyboard() {
+        const osk = document.getElementById('onScreenKeyboard');
+        if (!osk) return;
+        osk.innerHTML = '';
+        const keys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+        keys.forEach(k => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = k;
+            btn.addEventListener('click', () => {
+                const active = document.querySelector('.cell-input:focus');
+                if (active) {
+                    active.value = k;
+                    const row = parseInt(active.parentElement.getAttribute('data-row'), 10);
+                    const col = parseInt(active.parentElement.getAttribute('data-col'), 10);
+                    this.userAnswers[`${row}-${col}`] = k;
+                    this.moveToNextCell(row, col);
+                    this.updateStats();
+                    if (this.inlineValidationEnabled && this.currentWord) this.validateWordIfComplete(this.currentWord);
+                    this.saveToLocalStorage();
+                }
+            });
+            osk.appendChild(btn);
+        });
+        const back = document.createElement('button');
+        back.type = 'button';
+        back.textContent = '⌫';
+        back.title = 'Backspace';
+        back.addEventListener('click', () => {
+            const active = document.querySelector('.cell-input:focus');
+            if (active) {
+                const row = parseInt(active.parentElement.getAttribute('data-row'), 10);
+                const col = parseInt(active.parentElement.getAttribute('data-col'), 10);
+                if (active.value) {
+                    active.value = '';
+                    this.userAnswers[`${row}-${col}`] = '';
+                } else {
+                    this.moveToPreviousCell(row, col);
+                }
+                this.updateStats();
+                this.saveToLocalStorage();
+            }
+        });
+        osk.appendChild(back);
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.textContent = '⇄';
+        toggle.title = 'Toggle Across/Down';
+        toggle.addEventListener('click', () => this.toggleDirection());
+        osk.appendChild(toggle);
+    }
+
+    // Autosave
+    saveToLocalStorage() {
+        try {
+            const payload = { seed: this.seed, gridSize: this.gridSize, maxWords: this.maxWords, crossword: this.crossword, userAnswers: this.userAnswers };
+            localStorage.setItem('sits_crossword_autosave', JSON.stringify(payload));
+        } catch (e) { /* ignore */ }
+    }
+
+    restoreFromLocalStorage() {
+        try {
+            const raw = localStorage.getItem('sits_crossword_autosave');
+            if (!raw) return false;
+            const saved = JSON.parse(raw);
+            if (!saved.crossword || !saved.userAnswers) return false;
+            this.seed = saved.seed || this.seed;
+            this.randomGenerator = this.createRNG ? this.createRNG(this.seed) : null;
+            this.gridSize = saved.gridSize || this.gridSize;
+            this.maxWords = saved.maxWords || this.maxWords;
+            this.crossword = saved.crossword;
+            this.userAnswers = saved.userAnswers;
+            this.renderCrossword();
+            this.updateStats();
+            this.showMessage('Restored previous session', 'info');
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // Shareable link
+    copyShareLink() {
+        const params = new URLSearchParams(window.location.search);
+        params.set('seed', String(this.seed));
+        params.set('grid', String(this.gridSize));
+        params.set('words', String(this.maxWords));
+        const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+        navigator.clipboard.writeText(url).then(() => this.showMessage('Share link copied!', 'success'));
+    }
+
+    // Seeded RNG helpers
+    getInitialSeed() {
+        const params = new URLSearchParams(window.location.search);
+        const s = params.get('seed');
+        const n = s ? Number(s) : NaN;
+        if (!isNaN(n)) return n;
+        return Math.floor(Date.now() % 2147483647);
+    }
+
+    createRNG(seed) {
+        let t = seed >>> 0;
+        return function () {
+            t += 0x6D2B79F5;
+            let r = Math.imul(t ^ (t >>> 15), 1 | t);
+            r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+            return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    random() {
+        return this.randomGenerator ? this.randomGenerator() : Math.random();
+    }
+
+    // Theme helpers
+    getInitialTheme() {
+        const stored = localStorage.getItem('sits_theme');
+        if (stored === 'dark' || stored === 'light') return stored;
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return prefersDark ? 'dark' : 'light';
+    }
+
+    applyTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('sits_theme', theme);
+    }
+
+    toggleTheme() {
+        this.theme = this.theme === 'dark' ? 'light' : 'dark';
+        this.applyTheme(this.theme);
     }
 }
 

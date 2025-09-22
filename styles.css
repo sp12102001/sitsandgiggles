@@ -387,7 +387,13 @@ header p {
 }
 
 .cell-number {
-    display: none;
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 10px;
+    color: #64748b;
+    display: block;
+    font-weight: 700;
 }
 
 .cell-input {
@@ -417,6 +423,37 @@ header p {
     color: #1e40af;
     font-weight: 600;
     animation: pulse 2s infinite;
+}
+
+/* Active clue bar */
+.active-clue-bar {
+    position: sticky;
+    top: 0;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #e0e7ff, #f5f3ff);
+    color: #1f2937;
+    border: 1px solid #c7d2fe;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    font-size: 0.95rem;
+    font-weight: 600;
+    z-index: 5;
+}
+
+.active-clue-bar .clue-direction {
+    color: #4f46e5;
+    margin-right: 8px;
+}
+
+.active-clue-bar .clue-number {
+    color: #7c3aed;
+    margin-right: 8px;
+}
+
+.active-clue-bar .clue-length {
+    color: #1e40af;
+    margin-left: 8px;
 }
 
 @keyframes pulse {
@@ -536,6 +573,13 @@ header p {
         inset 0 1px 0 rgba(255, 255, 255, 0.7);
     transform: translateX(8px) scale(1.02);
     font-weight: 600;
+}
+
+.clue-item .clue-meta {
+    display: block;
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-bottom: 6px;
 }
 
 
@@ -763,4 +807,97 @@ header p {
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
     border: 1px solid #2563eb;
+}
+
+/* Controls enhancements */
+.control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: #475569;
+}
+
+.control input[type="checkbox"] {
+    transform: translateY(1px);
+}
+
+.control input[type="range"],
+.control select {
+    margin-left: 6px;
+}
+
+/* On-screen keyboard */
+.osk {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.osk button {
+    padding: 10px 0;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-weight: 700;
+    color: #1f2937;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.osk button:active {
+    transform: scale(0.98);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Dark mode overrides */
+body[data-theme="dark"] {
+    background: linear-gradient(135deg, #0f172a 0%, #1f2937 100%);
+    color: #e5e7eb;
+}
+
+body[data-theme="dark"] header,
+body[data-theme="dark"] .crossword-container,
+body[data-theme="dark"] .clues-container,
+body[data-theme="dark"] .stats,
+body[data-theme="dark"] .stat-item,
+body[data-theme="dark"] .btn {
+    background: rgba(17, 24, 39, 0.9);
+    color: #e5e7eb;
+    border-color: rgba(55, 65, 81, 0.6);
+}
+
+body[data-theme="dark"] header p,
+body[data-theme="dark"] .clue-text {
+    color: #cbd5e1;
+}
+
+body[data-theme="dark"] .active-clue-bar {
+    background: linear-gradient(135deg, #111827, #1f2937);
+    color: #e5e7eb;
+    border-color: #374151;
+}
+
+body[data-theme="dark"] .osk button {
+    background: rgba(31, 41, 55, 0.9);
+    color: #e5e7eb;
+    border-color: #374151;
+}
+
+body[data-theme="dark"] .cell-input {
+    color: #e5e7eb;
 }
