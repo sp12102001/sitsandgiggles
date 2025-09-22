@@ -525,12 +525,15 @@ class CrosswordGame {
     highlightWord(row, col) {
         // Clear previous highlights
         document.querySelectorAll('.cell').forEach(cell => {
-            cell.classList.remove('highlighted', 'current-word');
+            cell.classList.remove('highlighted', 'current-word', 'word-start', 'word-end');
         });
 
         document.querySelectorAll('.clue-item').forEach(clue => {
             clue.classList.remove('active');
         });
+
+        // Clear any existing word info display
+        this.clearWordInfo();
 
         // Find which word this cell belongs to
         const word = this.findWordAtPosition(row, col);
@@ -558,7 +561,43 @@ class CrosswordGame {
             const cell = document.querySelector(`[data-row="${cellRow}"][data-col="${cellCol}"]`);
             if (cell) {
                 cell.classList.add('current-word');
+
+                // Add position-specific classes for better visual feedback
+                if (i === 0) {
+                    cell.classList.add('word-start');
+                }
+                if (i === word.code.length - 1) {
+                    cell.classList.add('word-end');
+                }
             }
+        }
+
+        // Add visual indicator to show word direction and length
+        this.showWordInfo(word);
+    }
+
+    showWordInfo(word) {
+        // Create or update a floating info display
+        let wordInfo = document.getElementById('word-info');
+        if (!wordInfo) {
+            wordInfo = document.createElement('div');
+            wordInfo.id = 'word-info';
+            wordInfo.className = 'word-info-display';
+            document.querySelector('.crossword-container').appendChild(wordInfo);
+        }
+
+        const direction = word.horizontal ? 'Across' : 'Down';
+        wordInfo.innerHTML = `
+            <div class="word-direction">${direction}</div>
+            <div class="word-length-info">${word.code.length} letters</div>
+        `;
+        wordInfo.style.display = 'block';
+    }
+
+    clearWordInfo() {
+        const wordInfo = document.getElementById('word-info');
+        if (wordInfo) {
+            wordInfo.style.display = 'none';
         }
     }
 
