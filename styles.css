@@ -248,14 +248,7 @@ header p {
 }
 
 .cell-number {
-    position: absolute;
-    top: 3px;
-    left: 4px;
-    font-size: 11px;
-    font-weight: 700;
-    color: rgba(45, 55, 72, 0.8);
-    line-height: 1;
-    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    display: none;
 }
 
 .cell-input {
@@ -370,12 +363,6 @@ header p {
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
-.clue-number {
-    font-weight: 700;
-    color: #1e40af;
-    margin-right: 6px;
-    font-size: 0.9rem;
-}
 
 .clue-text {
     color: #374151;

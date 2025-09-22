@@ -510,7 +510,6 @@ class CrosswordGame {
         clue.dataset.horizontal = word.horizontal;
 
         clue.innerHTML = `
-            <span class="clue-number">${word.number}.</span>
             <span class="clue-text">${word.description}</span>
             <span class="word-length">(${word.code.length})</span>
         `;
