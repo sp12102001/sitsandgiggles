@@ -764,3 +764,40 @@ body[data-theme="dark"] .osk button {
 body[data-theme="dark"] .cell-input {
     color: #e5e7eb;
 }
+/* Remove any scrollbars around the grid */
+#gridWrapper,            /* if you have a wrapper */
+.grid-wrapper,
+.grid-scroller,
+#crosswordGrid {
+  overflow: visible !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* Let the grid size itself to content; no clipping */
+#crosswordGrid {
+  display: grid;
+  transform: none !important;
+  transform-origin: top left !important;
+}
+
+/* Hide any loading overlay permanently */
+#loadingMessage,
+.loading,
+.loading-overlay {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* If there’s any tooltip/word info element, nuke it */
+#word-info,
+.word-info,
+.crossword-tooltip {
+  display: none !important;
+}
+
+/* Global: never show horizontal page scroll because of the grid */
+html, body {
+  overflow-x: hidden;
+}
