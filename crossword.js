@@ -69,28 +69,9 @@ class CrosswordGame {
 
     // Initialize controls from URL or defaults
     applyInitialControlsState() {
-        const params = new URLSearchParams(window.location.search);
-        const gridParam = parseInt(params.get('grid') || '', 10);
-        const wordsParam = parseInt(params.get('words') || '', 10);
-        const inlineParam = params.get('inline');
-
-        const gridSizeSelect = document.getElementById('gridSizeSelect');
-        const wordCountSelect = document.getElementById('wordCountSelect');
-        const inlineToggle = document.getElementById('inlineValidationToggle');
-
-        if (!isNaN(gridParam) && gridSizeSelect) {
-            gridSizeSelect.value = String(gridParam);
-            this.gridSize = gridParam;
-        }
-        if (!isNaN(wordsParam) && wordCountSelect) {
-            wordCountSelect.value = String(wordsParam);
-            this.maxWords = wordsParam;
-        }
-        if (inlineParam && inlineToggle) {
-            const enable = inlineParam === '1' || inlineParam === 'true';
-            inlineToggle.checked = enable;
-            this.inlineValidationEnabled = enable;
-        }
+        this.gridSize = 12;
+        this.maxWords = 6;
+        this.inlineValidationEnabled = false;
         document.documentElement.style.setProperty('--cell-size', '32px');
     }
 
@@ -359,19 +340,15 @@ class CrosswordGame {
 
         setTimeout(() => {
             try {
-                const gridSizeSelect = document.getElementById('gridSizeSelect');
-                const wordCountSelect = document.getElementById('wordCountSelect');
-                if (gridSizeSelect) this.gridSize = parseInt(gridSizeSelect.value, 10) || this.gridSize;
-                if (wordCountSelect) this.maxWords = parseInt(wordCountSelect.value, 10) || this.maxWords;
+                this.gridSize = 12;
+                this.maxWords = 6;
                 this.crossword = this.createCrossword();
                 this.renderCrossword();
                 this.updateStats();
                 this.showLoading(false);
-                this.showMessage('New SITS crossword generated!', 'success');
                 if (this.saveToLocalStorage) this.saveToLocalStorage();
             } catch (error) {
                 console.error('Error generating crossword:', error);
-                this.showMessage('Error generating crossword', 'error');
                 this.showLoading(false);
             }
         }, 100);
@@ -587,7 +564,7 @@ class CrosswordGame {
         if (!this.crossword) return;
 
         // Set grid layout
-        gridElement.style.gridTemplateColumns = `repeat(${this.gridSize}, 1fr)`;
+        gridElement.style.gridTemplateColumns = `repeat(${this.gridSize}, var(--cell-size))`;
         gridElement.setAttribute('role', 'grid');
         gridElement.setAttribute('aria-rowcount', String(this.gridSize));
         gridElement.setAttribute('aria-colcount', String(this.gridSize));
@@ -604,7 +581,6 @@ class CrosswordGame {
 
         // Render clues
         this.renderClues(acrossClues, downClues);
-        if (this.buildOnScreenKeyboard) this.buildOnScreenKeyboard();
     }
 
     createCell(row, col) {
@@ -634,7 +610,7 @@ class CrosswordGame {
         input.className = 'cell-input';
         input.type = 'text';
         input.maxLength = 1;
-        input.setAttribute('inputmode', 'text');
+        input.setAttribute('inputmode', 'latin');
         input.setAttribute('autocomplete', 'off');
         input.setAttribute('autocorrect', 'off');
         input.setAttribute('autocapitalize', 'characters');
@@ -814,9 +790,7 @@ class CrosswordGame {
         }
 
         this.updateStats();
-        if (this.inlineValidationEnabled && this.currentWord && this.validateWordIfComplete) {
-            this.validateWordIfComplete(this.currentWord);
-        }
+        // Inline validation disabled for static basic mode
         if (this.saveToLocalStorage) this.saveToLocalStorage();
     }
 
@@ -826,20 +800,7 @@ class CrosswordGame {
         switch (event.key) {
             case 'Enter':
                 event.preventDefault();
-                if (this.inlineValidationEnabled && this.currentWord && this.validateWordIfComplete) {
-                    this.validateWordIfComplete(this.currentWord, true);
-                } else {
-                    this.checkAnswers();
-                }
-                if (this.currentWord) {
-                    const typed = this.getTypedCodeForWord(this.currentWord);
-                if (typed && typed.length === this.currentWord.code.length && typed !== this.currentWord.code && this.codeToEntity && this.codeToEntity[typed]) {
-                    const alt = this.codeToEntity[typed];
-                    if (alt && alt.fullName) {
-                        this.showMessage(`No, that's ${alt.fullName}.`, 'info');
-                    }
-                }
-                }
+                // No inline validation or popups in basic mode
                 break;
             case 'Backspace':
                 if (!input.value) {
@@ -960,7 +921,7 @@ class CrosswordGame {
             }
         });
 
-        this.showMessage(`${correct}/${total} correct answers!`, correct === total ? 'success' : 'info');
+        // No popup; keep stats only
     }
 
     showSolution() {
@@ -981,7 +942,6 @@ class CrosswordGame {
         });
 
         this.updateStats();
-        this.showMessage('Solution revealed!', 'info');
         if (this.saveToLocalStorage) this.saveToLocalStorage();
     }
 
@@ -1132,31 +1092,7 @@ class CrosswordGame {
         }
     }
 
-    showMessage(text, type = 'info') {
-        // Remove existing messages
-        document.querySelectorAll('.message').forEach(msg => msg.remove());
-
-        const message = document.createElement('div');
-        message.className = `message ${type}`;
-        message.textContent = text;
-        if (type === 'error') {
-            message.setAttribute('role', 'alert');
-            message.setAttribute('aria-live', 'assertive');
-        } else {
-            message.setAttribute('role', 'status');
-            message.setAttribute('aria-live', 'polite');
-        }
-        document.body.appendChild(message);
-
-        // Show message
-        setTimeout(() => message.classList.add('show'), 100);
-
-        // Hide message after 3 seconds
-        setTimeout(() => {
-            message.classList.remove('show');
-            setTimeout(() => message.remove(), 300);
-        }, 3000);
-    }
+    showMessage(text, type = 'info') { return; }
 
     setupEventListeners() {
         document.getElementById('newGameBtn').addEventListener('click', () => this.generateNewCrossword());
