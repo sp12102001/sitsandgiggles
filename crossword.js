@@ -9,21 +9,118 @@ class CrosswordGame {
         this.gridSize = 12;
         this.maxWords = 6;
         this.inlineValidationEnabled = false;
-        this.seed = this.getInitialSeed ? this.getInitialSeed() : Math.floor(Date.now());
-        this.randomGenerator = this.createRNG ? this.createRNG(this.seed) : null;
-        this.theme = this.getInitialTheme ? this.getInitialTheme() : 'light';
+        this.seed = this.getInitialSeed();
+        this.randomGenerator = this.createRNG(this.seed);
+        this.theme = this.getInitialTheme();
 
         this.init();
+    }
+
+    // Seeded RNG helpers
+    getInitialSeed() {
+        const params = new URLSearchParams(window.location.search);
+        const s = params.get('seed');
+        const n = s ? Number(s) : NaN;
+        if (!isNaN(n)) return n;
+        return Math.floor(Date.now() % 2147483647);
+    }
+
+    createRNG(seed) {
+        let t = seed >>> 0;
+        return function () {
+            t += 0x6D2B79F5;
+            let r = Math.imul(t ^ (t >>> 15), 1 | t);
+            r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+            return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    random() {
+        return this.randomGenerator ? this.randomGenerator() : Math.random();
+    }
+
+    // Theme helpers
+    getInitialTheme() {
+        const stored = localStorage.getItem('sits_theme');
+        if (stored === 'dark' || stored === 'light') return stored;
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        return prefersDark ? 'dark' : 'light';
+    }
+
+    applyTheme(theme) {
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('sits_theme', theme);
+    }
+
+    toggleTheme() {
+        this.theme = this.theme === 'dark' ? 'light' : 'dark';
+        this.applyTheme(this.theme);
     }
 
     async init() {
         await this.loadData();
         this.setupEventListeners();
-        if (this.applyInitialControlsState) this.applyInitialControlsState();
-        if (this.applyTheme) this.applyTheme(this.theme);
-        if (!(this.restoreFromLocalStorage && this.restoreFromLocalStorage())) {
+        this.applyInitialControlsState();
+        this.applyTheme(this.theme);
+        if (!this.restoreFromLocalStorage()) {
             this.generateNewCrossword();
         }
+    }
+
+    // Initialize controls from URL or defaults
+    applyInitialControlsState() {
+        const params = new URLSearchParams(window.location.search);
+        const gridParam = parseInt(params.get('grid') || '', 10);
+        const wordsParam = parseInt(params.get('words') || '', 10);
+        const inlineParam = params.get('inline');
+
+        const gridSizeSelect = document.getElementById('gridSizeSelect');
+        const wordCountSelect = document.getElementById('wordCountSelect');
+        const inlineToggle = document.getElementById('inlineValidationToggle');
+
+        if (!isNaN(gridParam) && gridSizeSelect) {
+            gridSizeSelect.value = String(gridParam);
+            this.gridSize = gridParam;
+        }
+        if (!isNaN(wordsParam) && wordCountSelect) {
+            wordCountSelect.value = String(wordsParam);
+            this.maxWords = wordsParam;
+        }
+        if (inlineParam && inlineToggle) {
+            const enable = inlineParam === '1' || inlineParam === 'true';
+            inlineToggle.checked = enable;
+            this.inlineValidationEnabled = enable;
+        }
+        document.documentElement.style.setProperty('--cell-size', '32px');
+    }
+
+    // Autosave
+    restoreFromLocalStorage() {
+        try {
+            const raw = localStorage.getItem('sits_crossword_autosave');
+            if (!raw) return false;
+            const saved = JSON.parse(raw);
+            if (!saved.crossword || !saved.userAnswers) return false;
+            this.seed = saved.seed || this.seed;
+            this.randomGenerator = this.createRNG(this.seed);
+            this.gridSize = saved.gridSize || this.gridSize;
+            this.maxWords = saved.maxWords || this.maxWords;
+            this.crossword = saved.crossword;
+            this.userAnswers = saved.userAnswers;
+            this.renderCrossword();
+            this.updateStats();
+            this.showMessage('Restored previous session', 'info');
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    saveToLocalStorage() {
+        try {
+            const payload = { seed: this.seed, gridSize: this.gridSize, maxWords: this.maxWords, crossword: this.crossword, userAnswers: this.userAnswers };
+            localStorage.setItem('sits_crossword_autosave', JSON.stringify(payload));
+        } catch (e) { /* ignore */ }
     }
 
     async loadData() {
@@ -229,6 +326,29 @@ class CrosswordGame {
 
     escapeRegExp(str) {
         return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Active clue bar update
+    updateActiveClueBar(word) {
+        const bar = document.getElementById('activeClueBar');
+        if (!bar || !word) return;
+        const directionText = word.horizontal ? 'Across' : 'Down';
+        bar.innerHTML = `<span class="clue-number">${word.number}</span><span class="clue-direction">${directionText}</span><span class="clue-text">${word.description}</span><span class="clue-length">(${word.code.length})</span>`;
+    }
+
+    // Membership of a cell across/down
+    getCellMembership(row, col) {
+        const memberships = [];
+        if (!this.crossword || !this.crossword.words) return memberships;
+        const across = this.crossword.words.find(w => w.horizontal && w.row === row && col >= w.col && col < w.col + w.code.length);
+        if (across) {
+            memberships.push({ direction: 'Across', number: across.number, length: across.code.length, index: col - across.col, row: across.row, col: across.col });
+        }
+        const down = this.crossword.words.find(w => !w.horizontal && w.col === col && row >= w.row && row < w.row + w.code.length);
+        if (down) {
+            memberships.push({ direction: 'Down', number: down.number, length: down.code.length, index: row - down.row, row: down.row, col: down.col });
+        }
+        return memberships;
     }
 
     generateNewCrossword() {
@@ -713,10 +833,12 @@ class CrosswordGame {
                 }
                 if (this.currentWord) {
                     const typed = this.getTypedCodeForWord(this.currentWord);
-                    if (typed && typed.length === this.currentWord.code.length && typed !== this.currentWord.code && this.codeToEntity && this.codeToEntity[typed]) {
-                        const alt = this.codeToEntity[typed];
+                if (typed && typed.length === this.currentWord.code.length && typed !== this.currentWord.code && this.codeToEntity && this.codeToEntity[typed]) {
+                    const alt = this.codeToEntity[typed];
+                    if (alt && alt.fullName) {
                         this.showMessage(`No, that's ${alt.fullName}.`, 'info');
                     }
+                }
                 }
                 break;
             case 'Backspace':
@@ -830,8 +952,10 @@ class CrosswordGame {
                 const typed = this.getTypedCodeForWord(word);
                 if (typed && typed.length === word.code.length && typed !== word.code && this.codeToEntity && this.codeToEntity[typed]) {
                     const alt = this.codeToEntity[typed];
-                    this.showMessage(`No, that's ${alt.fullName}.`, 'info');
-                    shownAlt = true;
+                    if (alt && alt.fullName) {
+                        this.showMessage(`No, that's ${alt.fullName}.`, 'info');
+                        shownAlt = true;
+                    }
                 }
             }
         });
@@ -1309,35 +1433,6 @@ class CrosswordGame {
         osk.appendChild(toggle);
     }
 
-    // Autosave
-    saveToLocalStorage() {
-        try {
-            const payload = { seed: this.seed, gridSize: this.gridSize, maxWords: this.maxWords, crossword: this.crossword, userAnswers: this.userAnswers };
-            localStorage.setItem('sits_crossword_autosave', JSON.stringify(payload));
-        } catch (e) { /* ignore */ }
-    }
-
-    restoreFromLocalStorage() {
-        try {
-            const raw = localStorage.getItem('sits_crossword_autosave');
-            if (!raw) return false;
-            const saved = JSON.parse(raw);
-            if (!saved.crossword || !saved.userAnswers) return false;
-            this.seed = saved.seed || this.seed;
-            this.randomGenerator = this.createRNG ? this.createRNG(this.seed) : null;
-            this.gridSize = saved.gridSize || this.gridSize;
-            this.maxWords = saved.maxWords || this.maxWords;
-            this.crossword = saved.crossword;
-            this.userAnswers = saved.userAnswers;
-            this.renderCrossword();
-            this.updateStats();
-            this.showMessage('Restored previous session', 'info');
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-
     // Shareable link
     copyShareLink() {
         const params = new URLSearchParams(window.location.search);
@@ -1346,47 +1441,6 @@ class CrosswordGame {
         params.set('words', String(this.maxWords));
         const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
         navigator.clipboard.writeText(url).then(() => this.showMessage('Share link copied!', 'success'));
-    }
-
-    // Seeded RNG helpers
-    getInitialSeed() {
-        const params = new URLSearchParams(window.location.search);
-        const s = params.get('seed');
-        const n = s ? Number(s) : NaN;
-        if (!isNaN(n)) return n;
-        return Math.floor(Date.now() % 2147483647);
-    }
-
-    createRNG(seed) {
-        let t = seed >>> 0;
-        return function () {
-            t += 0x6D2B79F5;
-            let r = Math.imul(t ^ (t >>> 15), 1 | t);
-            r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
-            return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-        };
-    }
-
-    random() {
-        return this.randomGenerator ? this.randomGenerator() : Math.random();
-    }
-
-    // Theme helpers
-    getInitialTheme() {
-        const stored = localStorage.getItem('sits_theme');
-        if (stored === 'dark' || stored === 'light') return stored;
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        return prefersDark ? 'dark' : 'light';
-    }
-
-    applyTheme(theme) {
-        document.body.setAttribute('data-theme', theme);
-        localStorage.setItem('sits_theme', theme);
-    }
-
-    toggleTheme() {
-        this.theme = this.theme === 'dark' ? 'light' : 'dark';
-        this.applyTheme(this.theme);
     }
 }
 
