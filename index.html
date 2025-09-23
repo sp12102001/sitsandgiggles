@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>SITS Entity Code Crossword</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -48,21 +48,6 @@
             <label class="control control-toggle" title="When enabled, words are checked as you complete them">
                 <input type="checkbox" id="inlineValidationToggle"> Inline validation
             </label>
-            <label class="control control-grid" for="gridSizeSelect">Grid
-                <select id="gridSizeSelect">
-                    <option value="10">10</option>
-                    <option value="12" selected>12</option>
-                    <option value="14">14</option>
-                </select>
-            </label>
-            <label class="control control-words" for="wordCountSelect">Words
-                <select id="wordCountSelect">
-                    <option value="4">4</option>
-                    <option value="6" selected>6</option>
-                    <option value="8">8</option>
-                    <option value="10">10</option>
-                </select>
-            </label>
         </div>
 
         <div class="game-area">
@@ -70,7 +55,7 @@
                 <div id="activeClueBar" class="active-clue-bar" role="status" aria-live="polite"></div>
                 <div id="crosswordGrid" class="crossword-grid"></div>
                 <div id="loadingMessage" class="loading">🔄 Generating crossword...</div>
-                <div id="onScreenKeyboard" class="osk" aria-label="On-screen keyboard"></div>
+                
             </div>
 
             <div class="clues-container">
