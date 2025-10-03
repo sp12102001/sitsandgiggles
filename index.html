@@ -2,96 +2,1892 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>SITS Entity Code Crossword</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SITS & Giggles</title>
+    <style>
+        :root {
+            /* Color palette */
+            --bg: #ffffff;
+            --card: #f6f7fb;
+            --muted: #5a6475;
+            --fg: #0e1320;
+            --accent: #2b6aff;
+            --ok: #1aa36f;
+            --bad: #d93d52;
+            --grid: #e7eaf3;
+            --cell: #ffffff;
+            --black: #cfd5e6;
+
+            /* Design tokens */
+            --shadow: 0 6px 18px rgba(5, 22, 58, .08);
+            --radius: 14px;
+            --mono: ui-monospace, Menlo, Consolas, monospace;
+            --sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: var(--sans);
+            color: var(--fg);
+            background: var(--bg);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e6e9f2;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--fg);
+        }
+
+        .brand p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .hidden-label {
+            display: none;
+        }
+
+        button,
+        input[type="date"] {
+            background: #fff;
+            color: var(--fg);
+            border: 1px solid #d7dcef;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(43, 106, 255, 0.12);
+        }
+
+        .toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            border: 1px solid #d7dcef;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+
+        /* Main layout */
+        .main-container {
+            height: calc(100vh - 80px);
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            padding: 24px;
+        }
+
+        /* Grid section */
+        .grid-section {
+            background: var(--card);
+            border: 1px solid #e3e7f3;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .grid {
+            --size: 42px;
+            height: 100%;
+            overflow: auto;
+            border: 1px solid #e3e7f3;
+            border-radius: 12px;
+            background: var(--grid);
+            padding: 12px;
+        }
+
+        .row {
+            display: flex;
+        }
+
+        .cell {
+            width: var(--size);
+            height: var(--size);
+            background: var(--cell);
+            border: 1px solid #e3e7f3;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .cell:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(43, 106, 255, 0.1);
+        }
+
+        .cell.black {
+            background: var(--black);
+        }
+
+        .cell input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            text-transform: uppercase;
+            color: #1b2340;
+            font-weight: 800;
+            font-size: 20px;
+            text-align: center;
+            caret-color: var(--accent);
+            transition: all 0.2s ease;
+        }
+
+        .cell input:focus {
+            background: rgba(43, 106, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(43, 106, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .cell .number {
+            position: absolute;
+            top: 3px;
+            left: 5px;
+            font-size: 11px;
+            color: #8b93a7;
+            font-weight: 600;
+        }
+
+        .cell.correct input {
+            background: rgba(26, 163, 111, 0.12);
+        }
+
+        .cell.wrong input {
+            background: rgba(217, 61, 82, 0.12);
+        }
+
+        .word-highlight {
+            background: rgba(43, 106, 255, 0.15) !important;
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 2px rgba(43, 106, 255, 0.3) !important;
+        }
+
+        .clue-item {
+            transition: all 0.2s ease;
+        }
+
+        .clue-item:hover {
+            background: rgba(43, 106, 255, 0.08);
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(43, 106, 255, 0.15);
+        }
+
+        .status-icon {
+            font-weight: bold;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Clues section */
+        .clues-section {
+            background: var(--card);
+            border: 1px solid #e3e7f3;
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            height: 100%;
+        }
+
+        .clues-section h2 {
+            margin: 0 0 12px 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--fg);
+        }
+
+        .clues-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            min-height: 0;
+            margin-bottom: 0;
+            flex: 1;
+        }
+
+        .clues-list {
+            margin: 0;
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 600px;
+            flex: 1;
+        }
+
+        .clues-container h3 {
+            margin: 0 0 12px 0;
+            color: #3b4258;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 6px;
+        }
+
+        .clues-list li {
+            line-height: 1.5;
+            cursor: pointer;
+            padding: 12px 8px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+            word-wrap: break-word;
+            -webkit-hyphens: auto;
+            hyphens: auto;
+        }
+
+        .clues-list li:hover {
+            color: var(--accent);
+            background: rgba(43, 106, 255, 0.08);
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(43, 106, 255, 0.15);
+        }
+
+        .clue-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e6e9f2;
+            flex-wrap: wrap;
+        }
+
+        .clue-controls button {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 16px;
+            font-size: 13px;
+        }
+
+        .direction-tag {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: #5a6475;
+            border: 1px solid #d7dcef;
+            padding: 2px 8px;
+            border-radius: 8px;
+            margin-left: 8px;
+            background: #fff;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        .footer {
+            color: #5a6475;
+            text-align: center;
+            padding: 16px 24px;
+            font-size: 14px;
+            border-top: 1px solid #e6e9f2;
+            background: #fafbfc;
+        }
+
+        /* Test results */
+        .test-results {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: #3b4258;
+            background: #fff;
+            border: 1px dashed #d7dcef;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 16px 0;
+        }
+
+        .info-text {
+            margin: 12px 0 0 0;
+            color: #3b4258;
+            font-size: 15px;
+            line-height: 1.5;
+            padding: 12px;
+            background: rgba(43, 106, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .grid-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .grid-controls button {
+            flex: 1;
+            min-width: 100px;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                gap: 20px;
+            }
+
+            .grid-section {
+                order: 2;
+            }
+
+            .clues-section {
+                order: 1;
+                max-height: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 16px;
+                gap: 16px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                padding: 16px;
+            }
+
+            .controls {
+                justify-content: center;
+            }
+
+            .clues-container {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .grid {
+                --size: 36px;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <div class="header-top">
-                <h1>SITS Screens Crossword</h1>
-                <a href="https://github.com/sp12102001" target="_blank" rel="noopener" class="github-badge"
-                    title="View on GitHub">
-                    <svg class="github-icon" viewBox="0 0 24 24" width="20" height="20">
-                        <path fill="currentColor"
+    <header class="header">
+        <div class="brand">
+            <h1>SITS & Giggles - Better than the New York Times</h1>
+            <p id="dateLabel"></p>
+            <div class="author-info">
+                <span class="author-name">by Sanjana</span>
+                <a href="https://github.com/sanju" class="github-link" target="_blank" rel="noopener noreferrer"
+                    title="Visit Sanjana's GitHub profile">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path
                             d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                     </svg>
-                    GitHub
                 </a>
             </div>
-            <p>Identify the SITS screen codes.</p>
-            <p style="font-size: 0.8rem; color: #64748b; margin-top: 8px;">Made by SP, inspired by Linebeak</p>
-            <div class="how-to-play">
-                <p>💡 <strong>How to play:</strong> Click on any cell to see the SITS entity description. Type the
-                    corresponding 3-4 letter entity code (e.g., AAC, ABT, ACM, ACR). Only pure letter codes (no numbers)
-                    are used. </p>
-        </header>
-
-        <div class="controls">
-            <button id="newGameBtn" class="btn primary">New</button>
-            <button id="checkAnswersBtn" class="btn">Check</button>
-            <button id="showSolutionBtn" class="btn">Reveal</button>
-            <button id="saveGameBtn" class="btn">Save</button>
-            <button id="loadGameBtn" class="btn">Load</button>
-            <button id="exportBtn" class="btn">Print</button>
-            <button id="shareLinkBtn" class="btn">🔗 Copy Share Link</button>
-            <button id="clearWordBtn" class="btn">🧹 Clear Word</button>
-            <button id="revealLetterBtn" class="btn">🔍 Reveal Letter</button>
-            <button id="revealWordBtn" class="btn">✨ Reveal Word</button>
-            <button id="themeToggle" class="btn">🌓 Theme</button>
-            <label class="control control-toggle" title="When enabled, words are checked as you complete them">
-                <input type="checkbox" id="inlineValidationToggle"> Inline validation
-            </label>
         </div>
+        <div class="controls">
+            <label class="toggle">
+                <input type="checkbox" id="inlineCheck">
+                <span>Inline validation</span>
+            </label>
+            <label for="datePick" class="hidden-label">Select date</label>
+            <input type="date" id="datePick" title="Select date for crossword">
+            <button id="loadDate">Load date</button>
+            <button id="clear">Clear progress</button>
+        </div>
+    </header>
 
-        <div class="game-area">
-            <div class="crossword-container">
-                <div id="activeClueBar" class="active-clue-bar" role="status" aria-live="polite"></div>
-                <div id="crosswordGrid" class="crossword-grid"></div>
-                <div id="loadingMessage" class="loading">🔄 Generating crossword...</div>
-                
+    <main class="main-container">
+        <section class="grid-section">
+            <div class="grid-controls">
+                <button id="checkAll">Check all</button>
+                <button id="revealWrong">Reveal wrong letters</button>
+                <button id="revealWord">Reveal selected word</button>
+                <button id="hintFirst">Hint: First letter</button>
+                <button id="hintLast">Hint: Last letter</button>
             </div>
+            <div id="grid" class="grid" role="grid" aria-label="Crossword grid"></div>
+        </section>
+
+        <section class="clues-section">
+            <h2>Clues</h2>
+            <p class="info-text">Type the SITS screen code. Digits are allowed. Examples: ACD, AA1. Each crossword uses
+                a random selection from all available codes.</p>
 
             <div class="clues-container">
-                <div class="clues-section">
-                    <h3>📍 Across</h3>
-                    <div id="acrossClues" class="clues-list"></div>
+                <div>
+                    <h3>Across</h3>
+                    <ol id="across" class="clues-list"></ol>
                 </div>
-                <div class="clues-section">
-                    <h3>📍 Down</h3>
-                    <div id="downClues" class="clues-list"></div>
+                <div>
+                    <h3>Down</h3>
+                    <ol id="down" class="clues-list"></ol>
                 </div>
             </div>
-        </div>
 
-        <div class="stats">
-            <div class="stat-item">
-                <span id="correctCount">0</span>
-                <label>Correct</label>
-            </div>
-            <div class="stat-item">
-                <span id="totalCount">0</span>
-                <label>Total</label>
-            </div>
-            <div class="stat-item">
-                <span id="accuracy">0%</span>
-                <label>Accuracy</label>
-            </div>
-        </div>
+        </section>
+    </main>
 
-    </div>
+    <footer class="footer">
+        Crossword from SITS codes. Built by Sanjana
+    </footer>
 
-    <!-- File input for loading saved games -->
-    <label for="fileInput" class="hidden-file-input">Load saved game file</label>
-    <input type="file" id="fileInput" accept=".json" class="hidden-file-input" title="Select a saved game file to load">
+    <script>
+        "use strict";
 
-    <script src="crossword.js"></script>
+        // ===== Constants and Configuration =====
+        const ITEMS = [
+            { code: "AA1", func: "Menu System - Low Level Functions (MEN01)" },
+            { code: "AAC", func: "Authentication & Authorisation Control Menu System, primarily for Supervisor Functions (MEN02)" },
+            { code: "AAL", func: "Authentication & Authorisation Log Menu System, primarily for Supervisor Functions (MEN02)" },
+            { code: "AAM", func: "Manages accessibility records for students. Also referenced as King's Inclusion Plan (KIP) in PT Dashboard panels." },
+            { code: "AAR", func: "Stores records related to accessibility assessments (SRS)." },
+            { code: "ABP", func: "Handles automated business procedures (Deprecated)." },
+            { code: "ACD", func: "Screen used to apply application decisions and manage clearance checks (e.g., view Qualifications, Offer text)." },
+            { code: "ADC", func: "Menu System - Supervisor Functions (MEN02) for archive management." },
+            { code: "ADD", func: "Records basic address data for students (Students - Basic Data component)." },
+            { code: "ADB", func: "Menu System - Supervisor Functions (MEN02) for viewing API debug messages." },
+            { code: "ADL", func: "Used to retrieve a set of Course Application (CAP) records before applying a decision." },
+            { code: "AED", func: "Menu System - Supervisor Functions (MEN02) for viewing archive export details." },
+            { code: "AEN", func: "Menu System - Supervisor Functions (MEN02) related to address entities." },
+            { code: "AFL", func: "Menu System - Supervisor Functions (MEN02) for audit tracking." },
+            { code: "APH", func: "Menu System - Supervisor Functions (MEN02) for auditing program history." },
+            { code: "APL", func: "Logs approval requests within the system." },
+            { code: "APT", func: "Defines the type of approvals needed in the system." },
+            { code: "ARC", func: "Maintenance screen used for defining tables for archiving." },
+            { code: "ARP", func: "Stores Accessibility Assessment Requirements and Providers (SRS)." },
+            { code: "ATY", func: "Defines types of addresses (Students - Basic Data component)." },
+            { code: "AUD", func: "Stores the details of system changes (Auditing Maintenance)." },
+            { code: "AUH", func: "Stores history of changes logged by AUD (Auditing Maintenance)." },
+            { code: "AUO", func: "Menu System - Supervisor Functions (MEN02)." },
+            { code: "AVG", func: "Basic Data entity for Awards and Validating Bodies." },
+            { code: "AWD", func: "Defines the classification and details of an academic award." },
+            { code: "BDC", func: "SITS e:Vision utility to specify which columns are included in a bulk download." },
+            { code: "BDE", func: "SV Connector for LMS/VLE IMS integration concerning Person/Course data." },
+            { code: "BDO", func: "SITS e:Vision utility for defining bulk download configuration." },
+            { code: "BLQ", func: "Queue management for batch letters." },
+            { code: "BLR", func: "Stores records of letters processed in batches." },
+            { code: "BPC", func: "Supervisor screen used for setting up and controlling batch programs." },
+            { code: "BPL", func: "Log results and details of batch processor runs." },
+            { code: "BSL", func: "Used for managing and running batch standard letters." },
+            { code: "CAL", func: "SITS e:Vision record for Campaign and Communications Management (SV305)." },
+            { code: "CAT", func: "Generic table for category maintenance (Supervisor Functions)." },
+            { code: "CBK", func: "Defines FTE factors, fee profiles, and course structure for a specific course block." },
+            { code: "CBO", func: "Defines the specific instance (Academic Year, Study Level, Dates) in which a course block runs." },
+            { code: "CCI", func: "Records related to consent confirmation (Low Level Functions)." },
+            { code: "CDE", func: "Used in StuTalk Web Services (MEN14)." },
+            { code: "CDT", func: "Used in StuTalk Web Services (MEN14)." },
+            { code: "CER", func: "Certificate Data used for Award certificate printing." },
+            { code: "CFF", func: "Defines fields within a Certificate Form for Award certificate printing." },
+            { code: "CFM", func: "Defines forms used for Award certificate printing." },
+            { code: "CGR", func: "SITS e:Vision entity related to the Portal (SV102) configuration." },
+            { code: "CHL", func: "Log for Hot Prospects in Campaign and Communications Management." },
+            { code: "CKC", func: "Menu system for Award certificate printing keyword control." },
+            { code: "CLL", func: "SITS e:Vision entity for Campaign and Communications Management." },
+            { code: "CMY", func: "Holds logistical details about an awards ceremony." },
+            { code: "COM", func: "Maintenance screen for defining components (Menu Maintenance)." },
+            { code: "CON", func: "Represents a section or box within an e:Vision tab/page; controlled by Role Groups (RGD)." },
+            { code: "COP", func: "Represents a clickable option or function within a Container (CON)." },
+            { code: "CPG", func: "Configured as Tabs that appear across the top of the Student Records window in e:Vision." },
+            { code: "CPP", func: "Used in Progression and Assessment management." },
+            { code: "CQA", func: "Defines the qualification and award (AWD) a student receives upon completion of a course." },
+            { code: "CRS", func: "The main record for course information (Code, Name, Mode of Attendance, Faculty/Dept, Tutor)." },
+            { code: "CSL", func: "Menu System - Supervisor Functions (MEN02) for server cache logging." },
+            { code: "CUS", func: "Maintenance screen for customer details (Supervisor Functions)." },
+            { code: "DAL", func: "Logs access to documents (Document Manager)." },
+            { code: "DBT", func: "Finance record storing information on debtors." },
+            { code: "DEC", func: "Reference data for Admissions Decision Codes." },
+            { code: "DME", func: "SITS e:Vision - Web Vistas component for error tracking." },
+            { code: "DMF", func: "SITS e:Vision - Web Vistas component defining fields for maintenance." },
+            { code: "DMV", func: "Core screen for creating and managing web vistas (SITS e:Vision)." },
+            { code: "DOC", func: "Primary table for Document Management." },
+            { code: "DPC", func: "Used in the Data Rectification menu for defining data protection categories." },
+            { code: "DPR", func: "Used in the Data Rectification menu for managing data protection requests." },
+            { code: "DRR", func: "Links a Document (DOC) record to another entity (e.g., STU)." },
+            { code: "DSB", func: "Reference data screen for Disability codes." },
+            { code: "DSH", func: "Reference data for additional disability and health conditions (linked to enrolment tasks)." },
+            { code: "DTY", func: "Defines types of documents managed by the Document Manager." },
+            { code: "DUO", func: "SITS e:Vision entity defining options for document uploads." },
+            { code: "EEX", func: "Stores details and contact information for External Examiners." },
+            { code: "ELJ", func: "Used in Finance (SAMD menu) for manual journal posting." },
+            { code: "EML", func: "Menu System screen for email maintenance." },
+            { code: "ESD", func: "Stores records pertaining to potential students (Enquiry Process menu)." },
+            { code: "EXR", func: "Primary entity for tracking and processing Extenuating Circumstance Requests (MCFs)." },
+            { code: "FEX", func: "Menu System for defining valid file extensions." },
+            { code: "FLD", func: "Uniface Field Definitions maintenance (Supervisor Functions)." },
+            { code: "FTS", func: "Menu System - Supervisor Functions (MEN02) related to file type configuration." },
+            { code: "FTY", func: "Menu System - Supervisor Functions (MEN02)." },
+            { code: "GII", func: "Used within the GradIntel system (SRS33)." },
+            { code: "GIO", func: "Manages data export (e.g., HEAR XML/PDF) from GradIntel system." },
+            { code: "GLR", func: "Stores records of generated letters." },
+            { code: "GRP", func: "Menu System - Low Level Functions (MEN01) related to processing groups/batches." },
+            { code: "GSL", func: "Supervisor screen for generating standard letters." },
+            { code: "GTK", func: "Low Level Functions (MEN01) and used in General Tasks management." },
+            { code: "GTT", func: "Records transactions related to General Tasks." },
+            { code: "HIN", func: "Stores HESA Instance Data (Statutory Reporting)." },
+            { code: "HST", func: "Stores HESA Student Data (Statutory Reporting)." },
+            { code: "IPU", func: "Details of a user accessing the Institution Published Programme (IPP) system." },
+            { code: "LGE", func: "Defines the entities associated with a Standard Letter Group (SLG)." },
+            { code: "LGH", func: "Finance record for Ledger Header details." },
+            { code: "LGT", func: "Stores Ledger Transaction Records (Finance component)." },
+            { code: "LLM", func: "Menu System for Language Localisation (MEN06)." },
+            { code: "LTS", func: "Menu System - Supervisor Functions (MEN02) for reusable text snippets." },
+            { code: "MAB", func: "Stores assessment pattern details, weightings, and qualifying marks for modules." },
+            { code: "MAI", func: "Menu System entity for storing additional identities linked to a Master Person record." },
+            { code: "MAV", func: "The definitive record (gold source data) detailing module availability, scheme, level, and assessment pattern for an academic year." },
+            { code: "MCR", func: "Stores the details of courses applicants apply to (Admissions Reference Data)." },
+            { code: "MEC", func: "Controls system messages (Supervisor Functions)." },
+            { code: "MFA", func: "Stores attachments related to messages/tasks (e:Vision Basic Data)." },
+            { code: "MHD", func: "Stores header information for messages/tasks, often containing task specific metadata (e.g., SCJ/SCE codes)." },
+            { code: "MNB", func: "Used to display notices after a successful login to the WinLog application." },
+            { code: "MOD", func: "Stores core Module details (Curriculum Management)." },
+            { code: "MOA", func: "Reference data for Programme Mode of Attendance (e.g., Full Time, Part Time)." },
+            { code: "MPA", func: "Used to assign staff (Personnel) to specific roles/appointments (e.g., OPAMA_REPORTS)." },
+            { code: "MUA", func: "Supervisor screen used to find or retrieve a student via email address or K-Number." },
+            { code: "NAE", func: "Menu System - Supervisor Functions (MEN02) for defining next action rules." },
+            { code: "OBR", func: "Stores object resource details for the Process Manager." },
+            { code: "OCL", func: "Low Level Function link between Organisation (ORG) and Contact." },
+            { code: "ORG", func: "Communication Relationship Master (CRM) record for an Organisation." },
+            { code: "PAL", func: "Logs program access in the client/server environment." },
+            { code: "PCO", func: "User-specific maintenance screen for containers in e:Vision." },
+            { code: "PCP", func: "User-specific maintenance screen for container options in e:Vision." },
+            { code: "PEL", func: "Menu System listing the entities a program has access to." },
+            { code: "PFL", func: "Menu System listing the fields a program has access to (used for defining default SYP values)." },
+            { code: "PIT", func: "Used in progression rule definition." },
+            { code: "PLM", func: "Used in Ceremony Maintenance to select the planning mode." },
+            { code: "POD", func: "Links Container Options (COP) to the relevant SRL (Standard Report/Letter) or SIW." },
+            { code: "PRA", func: "Manages access levels (Run, Write, Delete) for programs and is key to program auditing." },
+            { code: "PRG", func: "Defines the unique identifier and name of a qualification program (e.g., Bachelor of Arts (Hons))." },
+            { code: "PRS", func: "Stores core staff/personnel details, including name, email, and NINO." },
+            { code: "PRU", func: "Links a programme (PRG) to an associated route (ROU) to define valid combinations." },
+            { code: "PSA", func: "Process screen used to calculate awards for students." },
+            { code: "RDE", func: "Stores lifecycle events for research degrees (e.g., interruption events)." },
+            { code: "RGD", func: "Defines role groups used to control user access to Containers (CON) in e:Vision." },
+            { code: "ROU", func: "Defines a specific academic route associated with a Programme." },
+            { code: "SAW", func: "Records the academic award a student has achieved (used for graduation eligibility)." },
+            { code: "SCE", func: "Records the student's enrolment status, history, and current course block/occurrence details." },
+            { code: "SCY", func: "Used for generating ceremony scripts and tracking student attendance/guest seating." },
+            { code: "SDE", func: "Records events for Event Driven Reporting (Statutory Reporting/Compliance)." },
+            { code: "SLG", func: "Defines groups under which Standard Letters (SRL) are organized." },
+            { code: "SLP", func: "Defines parameters, variables, and logic used by SRLs or other programs (P in SDG_P)." },
+            { code: "SMC", func: "Stores student module credit information." },
+            { code: "SMO", func: "Stores records of modules a student is taking/registered on (used in XSM updates)." },
+            { code: "SMR", func: "Stores student module level result status." },
+            { code: "SMS", func: "Stores student module selections (used in bulk updates, registration)." },
+            { code: "SNK", func: "Stores Next of Kin/Emergency Contact Details." },
+            { code: "SQE", func: "Stores details of a student's qualifications and experience." },
+            { code: "SPR", func: "Core student record: details the student's Programme (PRG) and Route (ROU), containing key progression and assessment data." },
+            { code: "STU", func: "Core student record: stores personal details, identifiers (e.g., NINO, UCID), email, address, and status." },
+            { code: "SYP", func: "Stores global system configuration values that affect behavior across SITS and e:Vision." },
+            { code: "TKT", func: "The main screen defining a task code (used across the entire task system)." },
+            { code: "TTE", func: "Defines each step or 'page' within a Task (TKT), including the step name, description, and navigation logic (Next Steps/Error Steps)." },
+            { code: "TTQ", func: "Defines specific questions that appear within a Task Element (TTE)." },
+            { code: "TTU", func: "Used within tasks to perform direct table updates (e.g., updating seat numbers in Graduation)." },
+            { code: "UDC", func: "Top-level screen used to create a 'collection' of User Define Updates (UDU)." },
+            { code: "UDU", func: "Defines the individual steps/updates within an update collection and sets corresponding permissions." },
+            { code: "UGC", func: "Supervisor function used to control which user groups have sufficient access (run/write/delete levels) for specific programs/tables." },
+            { code: "USR", func: "Manages user access, login credentials, and security roles." },
+            { code: "VCR", func: "Primary screen for managing Visa CAS Requests (Points Based Immigration component)." },
+            { code: "VCO", func: "Links the Course (CRS) record to valid Programme (PRG) and Route (ROU) combinations." },
+            { code: "WSS", func: "Retrieves examination profiles and links allocated students to rooms, dates, and times." },
+            { code: "XCLRM", func: "Screen used to manage Clearing applications and apply decisions." },
+            { code: "XSM", func: "Process screen used for performing bulk addition or removal of modules for students." },
+            { code: "XPC", func: "Used for exporting data from one common screen at a time." },
+            { code: "XPU", func: "Used for exporting data across multiple related screens/entities." },
+            { code: "ADB", func: "Menu System for API Debug Messages (Supervisor Functions)." },
+            { code: "ADP", func: "Used in Exam Scheduling." },
+            { code: "ADR", func: "Assessment Reports screen for viewing due dates (CAM_XALT)." },
+            { code: "APHF", func: "Menu System for Audit Program History Field Changes (Supervisor Functions)." },
+            { code: "BPA", func: "Records audit details for changes made to program boilerplate text." },
+            { code: "CCH", func: "Stores the history of consent confirmations." },
+            { code: "CHE", func: "Defines elements for charts in SITS e:Vision Dashboards." },
+            { code: "CHR", func: "Defines resources related to Chart Groups in SITS e:Vision Dashboards." },
+            { code: "COA", func: "Defines additional parameters for Container Options in e:Vision Portal." },
+            { code: "DBV", func: "Menu System entity for database views." },
+            { code: "DMML", func: "Process screen for deleting Master Message Log (MML) records." },
+            { code: "EIL", func: "Menu System for viewing entity index lists." },
+            { code: "EQE", func: "Reference data for external qualifications and experience." },
+            { code: "EVH", func: "Stores help documentation content for e:Vision." },
+            { code: "FDP", func: "Reference data for configuring parameters used in fast decision making (Admissions)." },
+            { code: "FTY", func: "Defines record information related to file types." },
+            { code: "HCS", func: "Stores HESA Course data (Statutory Reporting)." },
+            { code: "HIN", func: "Stores HESA Instance Data for statutory returns." },
+            { code: "ISC", func: "Reference data for Incident Status Codes (Accessibility Assessment Management)." },
+            { code: "LMC", func: "User Menu option for listing the contents of a menu." },
+            { code: "LPU", func: "Tracks usage of Standard Letter Parameters (SLP)." },
+            { code: "MML", func: "Log of master messages in SITS/e:Vision." },
+            { code: "MOP", func: "Maintenance screen for defining menu options (Menu Maintenance)." },
+            { code: "MPW", func: "Stores Master User Password information (Supervisor Functions)." },
+            { code: "MVN", func: "Defines the occurrence name for Module Availability (MAV)." },
+            { code: "OBJ", func: "Defines the object template in the Process Manager Administration." },
+            { code: "PAG", func: "Utility used to link Containers (CON) to Container Pages (CPG) in e:Vision." },
+            { code: "TTU", func: "Used to run table updates (TUPs) from within a task." },
+            { code: "UGC", func: "Used to define and check user group permissions against program access levels (Run, Write, Delete)." },
+            { code: "UTL", func: "Logs web user transaction details." },
+            { code: "WTL", func: "Logs web transaction details." },
+            { code: "XACU", func: "Process screen for cleaning up audit records." }
+        ].map(item => ({
+            code: item.code.toUpperCase().trim(),
+            answer: item.code.toUpperCase().trim().replace(/[^A-Z0-9]/g, ''),
+            clue: item.func
+        }));
+
+        const DIR = { ACROSS: 0, DOWN: 1 };
+
+        // ===== DOM Elements =====
+        const E = {
+            grid: document.getElementById('grid'),
+            across: document.getElementById('across'),
+            down: document.getElementById('down'),
+            dateLabel: document.getElementById('dateLabel'),
+            inlineCheck: document.getElementById('inlineCheck'),
+            datePick: document.getElementById('datePick'),
+            loadDate: document.getElementById('loadDate'),
+            clearBtn: document.getElementById('clear'),
+            checkAll: document.getElementById('checkAll'),
+            revealWrong: document.getElementById('revealWrong'),
+            revealWord: document.getElementById('revealWord'),
+            hintFirst: document.getElementById('hintFirst'),
+            hintLast: document.getElementById('hintLast')
+        };
+
+        // ===== Application State =====
+        let STATE = {
+            date: todayStr(),
+            grid: null,
+            nums: null,
+            clues: null,
+            placements: null,
+            inline: false
+        };
+
+        // ===== Utility Functions =====
+        function mulberry32(a) {
+            return function () {
+                let t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        function seedFromDate(dateStr) {
+            const n = Number(dateStr.replaceAll('-', ''));
+            return mulberry32(n ^ 0x9E3779B9);
+        }
+
+        function todayStr() {
+            const d = new Date();
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const da = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${da}`;
+        }
+
+        function storageKey(dateStr) {
+            return `sits-fixed9:${dateStr}`;
+        }
+
+        function setDateLabel(dateStr) {
+            const d = new Date(dateStr + "T00:00:00");
+            E.dateLabel.textContent = d.toLocaleDateString(undefined, {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            E.datePick.value = dateStr;
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // ===== Crossword Generation =====
+        function createEmptyGrid(size) {
+            return Array.from({ length: size }, () =>
+                Array.from({ length: size }, () => null)
+            );
+        }
+
+        function canPlace(grid, word, row, col, dir) {
+            const N = grid.length;
+            const L = word.length;
+
+            if (dir === DIR.ACROSS) {
+                if (col + L > N) return false;
+                if (col > 0 && grid[row][col - 1] && grid[row][col - 1] !== '#') return false;
+                if (col + L < N && grid[row][col + L] && grid[row][col + L] !== '#') return false;
+
+                for (let k = 0; k < L; k++) {
+                    const r = row, c = col + k;
+                    const cell = grid[r][c];
+
+                    if (cell && cell !== word[k]) return false;
+                    if (!cell) {
+                        if (r > 0 && grid[r - 1][c] && grid[r - 1][c] !== '#') return false;
+                        if (r < N - 1 && grid[r + 1][c] && grid[r + 1][c] !== '#') return false;
+                    }
+                }
+                return true;
+            } else {
+                if (row + L > N) return false;
+                if (row > 0 && grid[row - 1][col] && grid[row - 1][col] !== '#') return false;
+                if (row + L < N && grid[row + L][col] && grid[row + L][col] !== '#') return false;
+
+                for (let k = 0; k < L; k++) {
+                    const r = row + k, c = col;
+                    const cell = grid[r][c];
+
+                    if (cell && cell !== word[k]) return false;
+                    if (!cell) {
+                        if (c > 0 && grid[r][c - 1] && grid[r][c - 1] !== '#') return false;
+                        if (c < N - 1 && grid[r][c + 1] && grid[r][c + 1] !== '#') return false;
+                    }
+                }
+                return true;
+            }
+        }
+
+        function placeWord(grid, word, row, col, dir) {
+            const positions = [];
+            if (dir === DIR.ACROSS) {
+                for (let k = 0; k < word.length; k++) {
+                    if (!grid[row][col + k]) {
+                        grid[row][col + k] = word[k];
+                        positions.push([row, col + k]);
+                    }
+                }
+            } else {
+                for (let k = 0; k < word.length; k++) {
+                    if (!grid[row + k][col]) {
+                        grid[row + k][col] = word[k];
+                        positions.push([row + k, col]);
+                    }
+                }
+            }
+            return positions;
+        }
+
+        function removePositions(grid, positions) {
+            for (const [r, c] of positions) {
+                grid[r][c] = null;
+            }
+        }
+
+        function shuffle(array, rng) {
+            const arr = array.slice();
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function findAnchors(grid, word) {
+            const N = grid.length;
+            const anchors = [];
+
+            // Find crossing anchors
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    const cell = grid[r][c];
+                    if (!cell || cell === "#") continue;
+
+                    for (let i = 0; i < word.length; i++) {
+                        if (word[i] !== cell) continue;
+
+                        // Check across placement
+                        const startColAcross = c - i;
+                        if (startColAcross >= 0 && canPlace(grid, word, r, startColAcross, DIR.ACROSS)) {
+                            anchors.push({
+                                row: r,
+                                col: startColAcross,
+                                dir: DIR.ACROSS,
+                                cross: true
+                            });
+                        }
+
+                        // Check down placement
+                        const startRowDown = r - i;
+                        if (startRowDown >= 0 && canPlace(grid, word, startRowDown, c, DIR.DOWN)) {
+                            anchors.push({
+                                row: startRowDown,
+                                col: c,
+                                dir: DIR.DOWN,
+                                cross: true
+                            });
+                        }
+                    }
+                }
+            }
+
+            // If no crossing anchors found, find empty placements
+            if (!anchors.length) {
+                for (let r = 0; r < N; r++) {
+                    for (let c = 0; c < N; c++) {
+                        if (canPlace(grid, word, r, c, DIR.ACROSS)) {
+                            anchors.push({ row: r, col: c, dir: DIR.ACROSS, cross: false });
+                        }
+                        if (canPlace(grid, word, r, c, DIR.DOWN)) {
+                            anchors.push({ row: r, col: c, dir: DIR.DOWN, cross: false });
+                        }
+                    }
+                }
+            }
+
+            // Sort by crossing priority
+            return anchors.sort((a, b) => (b.cross ? 1 : 0) - (a.cross ? 1 : 0));
+        }
+
+        function fillBlacks(grid) {
+            for (let r = 0; r < grid.length; r++) {
+                for (let c = 0; c < grid.length; c++) {
+                    if (grid[r][c] === null) {
+                        grid[r][c] = '#';
+                    }
+                }
+            }
+        }
+
+        function numberGrid(grid) {
+            const N = grid.length;
+            const numbers = Array.from({ length: N }, () => Array(N).fill(null));
+            let counter = 1;
+
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    if (grid[r][c] === '#') continue;
+
+                    const isAcrossStart = (c === 0 || grid[r][c - 1] === '#') &&
+                        (c + 1 < N && grid[r][c + 1] !== '#');
+                    const isDownStart = (r === 0 || grid[r - 1][c] === '#') &&
+                        (r + 1 < N && grid[r + 1][c] !== '#');
+
+                    if (isAcrossStart || isDownStart) {
+                        numbers[r][c] = counter++;
+                    }
+                }
+            }
+
+            return numbers;
+        }
+
+        function generate(entries, rng) {
+            // Select a subset of items for the crossword (max 12 items for reasonable size)
+            const maxItems = Math.min(12, Math.max(6, entries.length));
+            const selectedItems = shuffle(entries.slice(), rng).slice(0, maxItems);
+
+            const maxLen = Math.max(...selectedItems.map(e => e.answer.length));
+            const baseSize = Math.min(12, Math.max(8, maxLen + 2));
+
+            for (let size = baseSize; size <= 15; size++) {
+                const grid = createEmptyGrid(size);
+                const ordered = shuffle(
+                    selectedItems.slice().sort((a, b) => b.answer.length - a.answer.length),
+                    rng
+                );
+
+                // Place first word in center
+                const first = ordered[0].answer;
+                const startRow = Math.floor(size / 2);
+                const startCol = Math.floor((size - first.length) / 2);
+
+                if (!canPlace(grid, first, startRow, startCol, DIR.ACROSS)) continue;
+
+                const placements = [{
+                    entry: ordered[0],
+                    row: startRow,
+                    col: startCol,
+                    dir: DIR.ACROSS,
+                    positions: placeWord(grid, first, startRow, startCol, DIR.ACROSS)
+                }];
+
+                const rest = ordered.slice(1);
+
+                function backtrack(index) {
+                    if (index >= rest.length) return true;
+
+                    const word = rest[index].answer;
+                    const anchors = shuffle(findAnchors(grid, word), rng);
+
+                    for (const anchor of anchors) {
+                        const positions = placeWord(grid, word, anchor.row, anchor.col, anchor.dir);
+                        placements.push({
+                            entry: rest[index],
+                            row: anchor.row,
+                            col: anchor.col,
+                            dir: anchor.dir,
+                            positions: positions
+                        });
+
+                        if (backtrack(index + 1)) return true;
+
+                        placements.pop();
+                        removePositions(grid, positions);
+                    }
+
+                    return false;
+                }
+
+                if (backtrack(0)) {
+                    fillBlacks(grid);
+                    return { grid, placements };
+                }
+            }
+
+            // If we can't fit all selected items, try with fewer items
+            if (selectedItems.length > 6) {
+                return generate(selectedItems.slice(0, Math.floor(selectedItems.length * 0.7)), rng);
+            }
+
+            // Last resort: create a simple grid with just a few items
+            const simpleItems = selectedItems.slice(0, 4);
+            const simpleGrid = createEmptyGrid(8);
+            const simplePlacements = [];
+
+            // Place items in a simple pattern
+            for (let i = 0; i < simpleItems.length && i < 4; i++) {
+                const item = simpleItems[i];
+                const row = 2 + i;
+                const col = 2;
+
+                if (canPlace(simpleGrid, item.answer, row, col, DIR.ACROSS)) {
+                    placeWord(simpleGrid, item.answer, row, col, DIR.ACROSS);
+                    simplePlacements.push({
+                        entry: item,
+                        row: row,
+                        col: col,
+                        dir: DIR.ACROSS,
+                        positions: []
+                    });
+                }
+            }
+
+            fillBlacks(simpleGrid);
+            return { grid: simpleGrid, placements: simplePlacements };
+        }
+
+        // ===== UI Rendering =====
+        function renderGrid() {
+            E.grid.innerHTML = '';
+            const { grid, nums } = STATE;
+
+            grid.forEach((row, rowIndex) => {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'row';
+
+                row.forEach((cell, colIndex) => {
+                    const cellEl = document.createElement('div');
+                    cellEl.className = 'cell';
+
+                    if (cell === '#') {
+                        cellEl.classList.add('black');
+                    } else {
+                        if (nums[rowIndex][colIndex]) {
+                            const numEl = document.createElement('div');
+                            numEl.className = 'number';
+                            numEl.textContent = nums[rowIndex][colIndex];
+                            cellEl.appendChild(numEl);
+                        }
+
+                        const input = document.createElement('input');
+                        input.maxLength = 1;
+                        input.dataset.row = rowIndex;
+                        input.dataset.col = colIndex;
+
+                        input.addEventListener('input', handleInput);
+                        input.addEventListener('keydown', handleKeydown);
+
+                        cellEl.appendChild(input);
+                    }
+
+                    rowEl.appendChild(cellEl);
+                });
+
+                E.grid.appendChild(rowEl);
+            });
+        }
+
+        function buildClues() {
+            const { grid, nums, placements } = STATE;
+            const N = grid.length;
+            const placedAnswers = new Set(placements.map(p => p.entry.answer));
+
+            const across = [];
+            const down = [];
+
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    if (grid[r][c] === '#' || !nums[r][c]) continue;
+
+                    // Check across
+                    if ((c === 0 || grid[r][c - 1] === '#') && (c + 1 < N && grid[r][c + 1] !== '#')) {
+                        let col = c;
+                        let answer = '';
+
+                        while (col < N && grid[r][col] !== '#') {
+                            answer += grid[r][col];
+                            col++;
+                        }
+
+                        if (placedAnswers.has(answer)) {
+                            const entry = placements.find(p => p.entry.answer === answer).entry;
+                            across.push({
+                                num: nums[r][c],
+                                answer: answer,
+                                clue: entry.clue,
+                                len: answer.length,
+                                row: r,
+                                col: c,
+                                code: entry.code
+                            });
+                        }
+                    }
+
+                    // Check down
+                    if ((r === 0 || grid[r - 1][c] === '#') && (r + 1 < N && grid[r + 1][c] !== '#')) {
+                        let row = r;
+                        let answer = '';
+
+                        while (row < N && grid[row][c] !== '#') {
+                            answer += grid[row][c];
+                            row++;
+                        }
+
+                        if (placedAnswers.has(answer)) {
+                            const entry = placements.find(p => p.entry.answer === answer).entry;
+                            down.push({
+                                num: nums[r][c],
+                                answer: answer,
+                                clue: entry.clue,
+                                len: answer.length,
+                                row: r,
+                                col: c,
+                                code: entry.code
+                            });
+                        }
+                    }
+                }
+            }
+
+            across.sort((a, b) => a.num - b.num);
+            down.sort((a, b) => a.num - b.num);
+
+            return { across, down };
+        }
+
+        function renderClues() {
+            function createClueItem(clue, direction) {
+                const li = document.createElement('li');
+                const label = `${clue.num}${direction.charAt(0)} — ${clue.len} letters`;
+
+                // Check word completion status
+                const wordStatus = getWordStatus(clue, direction);
+                const statusIcon = getStatusIcon(wordStatus);
+
+                li.innerHTML = `
+      <div class="clue-item-content">
+        <strong class="clue-label">${label}:</strong>
+        <span class="clue-text">${escapeHtml(clue.clue)}</span>
+        <span class="direction-tag clue-direction-tag">${direction}</span>
+        <span class="status-icon clue-status-icon">${statusIcon}</span>
+      </div>
+    `;
+
+                li.title = `Answer format: ${clue.code} | Click to highlight word`;
+                li.addEventListener('click', () => highlightWord(clue, direction));
+                li.classList.add('clue-item');
+                li.dataset.clueNum = clue.num;
+                li.dataset.direction = direction;
+
+                return li;
+            }
+
+            E.across.innerHTML = '';
+            E.down.innerHTML = '';
+
+            STATE.clues.across.forEach(clue =>
+                E.across.appendChild(createClueItem(clue, 'Across'))
+            );
+            STATE.clues.down.forEach(clue =>
+                E.down.appendChild(createClueItem(clue, 'Down'))
+            );
+        }
+
+        // ===== Input and Navigation =====
+        function handleInput(event) {
+            const input = event.target;
+            input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 1);
+
+            if (STATE.inline) {
+                validateCell(input);
+            }
+
+            saveProgress();
+            updateClueStatus(); // Update clue status indicators
+
+            // Auto-advance to next cell when typing (immediate, no delay)
+            if (input.value) {
+                const row = +input.dataset.row;
+                const col = +input.dataset.col;
+                moveToNextCell(row, col, 'right');
+            }
+        }
+
+        function handleKeydown(event) {
+            const input = event.target;
+            const row = +input.dataset.row;
+            const col = +input.dataset.col;
+            const N = STATE.grid.length;
+
+            // Handle arrow key navigation
+            if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                moveToNextCell(row, col, 'right');
+            } else if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                moveToNextCell(row, col, 'left');
+            } else if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                moveToNextCell(row, col, 'down');
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                moveToNextCell(row, col, 'up');
+            } else if (event.key === 'Backspace' && !input.value) {
+                event.preventDefault();
+                moveToNextCell(row, col, 'left');
+            } else if (event.key === 'Tab') {
+                event.preventDefault();
+                moveToNextWord(row, col, event.shiftKey);
+            } else if (event.key === 'Delete') {
+                // Clear current cell and move right
+                event.preventDefault();
+                input.value = '';
+                saveProgress();
+                moveToNextCell(row, col, 'right');
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                moveToNextWord(row, col, false);
+            } else if (event.key === ' ') {
+                event.preventDefault();
+                toggleDirection(row, col);
+            }
+        }
+
+        function focusCell(row, col) {
+            const input = E.grid.querySelector(`input[data-row="${row}"][data-col="${col}"]`);
+            if (input) {
+                input.focus();
+                highlightCurrentWord(row, col);
+            }
+        }
+
+        function moveToNextWord(currentRow, currentCol, reverse = false) {
+            const { grid, nums } = STATE;
+            const allWords = [];
+
+            // Collect all word starting positions
+            for (let r = 0; r < grid.length; r++) {
+                for (let c = 0; c < grid.length; c++) {
+                    if (grid[r][c] === '#' || !nums[r][c]) continue;
+
+                    // Check if this is a word start
+                    const isAcrossStart = (c === 0 || grid[r][c - 1] === '#') &&
+                        (c + 1 < grid.length && grid[r][c + 1] !== '#');
+                    const isDownStart = (r === 0 || grid[r - 1][c] === '#') &&
+                        (r + 1 < grid.length && grid[r + 1][c] !== '#');
+
+                    if (isAcrossStart) allWords.push({ row: r, col: c, dir: 'across', num: nums[r][c] });
+                    if (isDownStart) allWords.push({ row: r, col: c, dir: 'down', num: nums[r][c] });
+                }
+            }
+
+            // Sort by number
+            allWords.sort((a, b) => a.num - b.num);
+
+            // Find current word
+            const currentWordIndex = allWords.findIndex(word =>
+                word.row === currentRow && word.col === currentCol
+            );
+
+            if (currentWordIndex === -1) return;
+
+            // Get next word
+            let nextIndex;
+            if (reverse) {
+                nextIndex = currentWordIndex > 0 ? currentWordIndex - 1 : allWords.length - 1;
+            } else {
+                nextIndex = currentWordIndex < allWords.length - 1 ? currentWordIndex + 1 : 0;
+            }
+
+            const nextWord = allWords[nextIndex];
+            focusCell(nextWord.row, nextWord.col);
+        }
+
+        function toggleDirection(row, col) {
+            const { grid, nums } = STATE;
+
+            // Check if current cell is part of both across and down words
+            const hasAcross = (col === 0 || grid[row][col - 1] === '#') &&
+                (col + 1 < grid.length && grid[row][col + 1] !== '#');
+            const hasDown = (row === 0 || grid[row - 1][col] === '#') &&
+                (row + 1 < grid.length && grid[row + 1][col] !== '#');
+
+            if (hasAcross && hasDown) {
+                // Toggle between across and down highlighting
+                const currentHighlight = E.grid.querySelector('.word-highlight');
+                if (currentHighlight) {
+                    // Find the other direction and highlight it
+                    const range = findWordRange(row, col);
+                    if (range) {
+                        highlightWordByRange(range);
+                    }
+                }
+            }
+        }
+
+        function highlightCurrentWord(row, col) {
+            const range = findWordRange(row, col);
+            if (range) {
+                highlightWordByRange(range);
+            }
+        }
+
+        function highlightWordByRange(range) {
+            clearHighlights();
+
+            const cells = [];
+            if (range.dir === 'A') {
+                for (let c = range.startCol; c <= range.endCol; c++) {
+                    cells.push({ row: range.row, col: c });
+                }
+            } else {
+                for (let r = range.startRow; r <= range.endRow; r++) {
+                    cells.push({ row: r, col: range.col });
+                }
+            }
+
+            cells.forEach(({ row, col }) => {
+                const cell = E.grid.querySelector(`input[data-row="${row}"][data-col="${col}"]`)?.parentElement;
+                if (cell) {
+                    cell.classList.add('word-highlight');
+                }
+            });
+        }
+
+        function moveToNextCell(currentRow, currentCol, direction) {
+            const N = STATE.grid.length;
+            let newRow = currentRow;
+            let newCol = currentCol;
+
+            switch (direction) {
+                case 'right':
+                    for (let c = currentCol + 1; c < N; c++) {
+                        if (STATE.grid[currentRow][c] !== '#') {
+                            newCol = c;
+                            break;
+                        }
+                    }
+                    break;
+                case 'left':
+                    for (let c = currentCol - 1; c >= 0; c--) {
+                        if (STATE.grid[currentRow][c] !== '#') {
+                            newCol = c;
+                            break;
+                        }
+                    }
+                    break;
+                case 'down':
+                    for (let r = currentRow + 1; r < N; r++) {
+                        if (STATE.grid[r][currentCol] !== '#') {
+                            newRow = r;
+                            break;
+                        }
+                    }
+                    break;
+                case 'up':
+                    for (let r = currentRow - 1; r >= 0; r--) {
+                        if (STATE.grid[r][currentCol] !== '#') {
+                            newRow = r;
+                            break;
+                        }
+                    }
+                    break;
+            }
+
+            // If we found a valid cell, focus it
+            if (newRow !== currentRow || newCol !== currentCol) {
+                const nextInput = E.grid.querySelector(`input[data-row="${newRow}"][data-col="${newCol}"]`);
+                if (nextInput) {
+                    nextInput.focus();
+                    // Clear the next cell if it has content (for easy retyping)
+                    if (nextInput.value) {
+                        nextInput.select();
+                    }
+                }
+            }
+        }
+
+        function smartMoveNext(event) {
+            const input = event.target;
+            const row = +input.dataset.row;
+            const col = +input.dataset.col;
+            const N = STATE.grid.length;
+
+            // Try moving right
+            for (let c = col + 1; c < N; c++) {
+                if (STATE.grid[row][c] === '#') break;
+                const next = E.grid.querySelector(`input[data-row="${row}"][data-col="${c}"]`);
+                if (next && !next.value) {
+                    next.focus();
+                    return;
+                }
+            }
+
+            // Try moving down and left
+            for (let r = row + 1; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    if (STATE.grid[r][c] === '#') continue;
+                    const next = E.grid.querySelector(`input[data-row="${r}"][data-col="${c}"]`);
+                    if (next && !next.value) {
+                        next.focus();
+                        return;
+                    }
+                }
+            }
+        }
+
+        function smartMovePrev(event) {
+            const input = event.target;
+            const row = +input.dataset.row;
+            const col = +input.dataset.col;
+            const N = STATE.grid.length;
+
+            // Try moving left
+            for (let c = col - 1; c >= 0; c--) {
+                if (STATE.grid[row][c] === '#') break;
+                const prev = E.grid.querySelector(`input[data-row="${row}"][data-col="${c}"]`);
+                if (prev) {
+                    prev.focus();
+                    return;
+                }
+            }
+
+            // Try moving up and right
+            for (let r = row - 1; r >= 0; r--) {
+                for (let c = N - 1; c >= 0; c--) {
+                    if (STATE.grid[r][c] === '#') continue;
+                    const prev = E.grid.querySelector(`input[data-row="${r}"][data-col="${c}"]`);
+                    if (prev) {
+                        prev.focus();
+                        return;
+                    }
+                }
+            }
+        }
+
+        // ===== Word Status and Highlighting =====
+        function getWordStatus(clue, direction) {
+            const { grid } = STATE;
+            if (!grid || !clue) return 'empty'; // Safety check
+
+            const isAcross = direction.toLowerCase() === 'across';
+            let currentWord = '';
+
+            if (isAcross) {
+                for (let c = clue.col; c < grid.length && grid[clue.row][c] !== '#'; c++) {
+                    const input = E.grid.querySelector(`input[data-row="${clue.row}"][data-col="${c}"]`);
+                    currentWord += input ? input.value.toUpperCase() : '';
+                }
+            } else {
+                for (let r = clue.row; r < grid.length && grid[r][clue.col] !== '#'; r++) {
+                    const input = E.grid.querySelector(`input[data-row="${r}"][data-col="${clue.col}"]`);
+                    currentWord += input ? input.value.toUpperCase() : '';
+                }
+            }
+
+            if (currentWord.length === 0) return 'empty';
+            if (currentWord === clue.answer) return 'complete';
+            if (currentWord.length === clue.answer.length) return 'wrong';
+            return 'partial';
+        }
+
+        function getStatusIcon(status) {
+            switch (status) {
+                case 'complete': return '✓';
+                case 'partial': return '⚠️';
+                case 'wrong': return '❌';
+                case 'empty': return '○';
+                default: return '';
+            }
+        }
+
+        function highlightWord(clue, direction) {
+            // Clear previous highlights
+            clearHighlights();
+
+            const { grid } = STATE;
+            const isAcross = direction.toLowerCase() === 'across';
+            const cells = [];
+
+            if (isAcross) {
+                for (let c = clue.col; c < grid.length && grid[clue.row][c] !== '#'; c++) {
+                    cells.push({ row: clue.row, col: c });
+                }
+            } else {
+                for (let r = clue.row; r < grid.length && grid[r][clue.col] !== '#'; r++) {
+                    cells.push({ row: r, col: clue.col });
+                }
+            }
+
+            // Add highlight class to cells
+            cells.forEach(({ row, col }) => {
+                const cell = E.grid.querySelector(`input[data-row="${row}"][data-col="${col}"]`)?.parentElement;
+                if (cell) {
+                    cell.classList.add('word-highlight');
+                }
+            });
+
+            // Focus first empty cell or first cell
+            const firstEmpty = cells.find(({ row, col }) => {
+                const input = E.grid.querySelector(`input[data-row="${row}"][data-col="${col}"]`);
+                return input && !input.value;
+            });
+
+            const targetCell = firstEmpty || cells[0];
+            if (targetCell) {
+                focusCell(targetCell.row, targetCell.col);
+            }
+        }
+
+        function clearHighlights() {
+            E.grid.querySelectorAll('.word-highlight').forEach(cell => {
+                cell.classList.remove('word-highlight');
+            });
+        }
+
+        function updateClueStatus() {
+            // Update status icons for all clues
+            if (!STATE.clues) return; // Safety check
+
+            [...E.across.querySelectorAll('.clue-item'), ...E.down.querySelectorAll('.clue-item')].forEach(item => {
+                const clueNum = parseInt(item.dataset.clueNum);
+                const direction = item.dataset.direction;
+
+                // Find the clue data
+                const clues = direction === 'across' ? STATE.clues.across : STATE.clues.down;
+                const clue = clues.find(c => c.num === clueNum);
+
+                if (clue) {
+                    const status = getWordStatus(clue, direction);
+                    const statusIcon = getStatusIcon(status);
+                    const iconElement = item.querySelector('.status-icon');
+                    if (iconElement) {
+                        iconElement.textContent = statusIcon;
+                    }
+                }
+            });
+        }
+
+        // ===== Validation =====
+        function getAnswerMap() {
+            const map = new Map();
+            const { grid } = STATE;
+
+            for (let r = 0; r < grid.length; r++) {
+                for (let c = 0; c < grid.length; c++) {
+                    const cell = grid[r][c];
+                    if (cell && cell !== '#') {
+                        map.set(`${r},${c}`, cell);
+                    }
+                }
+            }
+
+            return map;
+        }
+
+        function validateCell(input) {
+            const key = `${input.dataset.row},${input.dataset.col}`;
+            const expected = getAnswerMap().get(key);
+            const value = input.value.toUpperCase();
+            const cell = input.parentElement;
+
+            cell.classList.remove('correct', 'wrong');
+
+            if (!value) return;
+
+            if (value === expected) {
+                cell.classList.add('correct');
+            } else {
+                cell.classList.add('wrong');
+            }
+        }
+
+        function validateAll(markBlanks = false) {
+            const answerMap = getAnswerMap();
+
+            for (const input of getInputs()) {
+                const value = input.value.toUpperCase();
+                const cell = input.parentElement;
+                const key = `${input.dataset.row},${input.dataset.col}`;
+
+                cell.classList.remove('correct', 'wrong');
+
+                if (!value && !markBlanks) continue;
+
+                if (value === answerMap.get(key)) {
+                    cell.classList.add('correct');
+                } else {
+                    cell.classList.add('wrong');
+                }
+            }
+        }
+
+        function revealWrong() {
+            const answerMap = getAnswerMap();
+
+            for (const input of getInputs()) {
+                const key = `${input.dataset.row},${input.dataset.col}`;
+                const expected = answerMap.get(key);
+
+                if (input.value && input.value.toUpperCase() !== expected) {
+                    input.value = expected;
+                    input.parentElement.classList.add('correct');
+                    input.parentElement.classList.remove('wrong');
+                }
+            }
+
+            saveProgress();
+        }
+
+        function revealCurrentWord() {
+            const active = document.activeElement;
+            if (!active || active.tagName !== 'INPUT') return;
+
+            const row = +active.dataset.row;
+            const col = +active.dataset.col;
+            const { grid, nums } = STATE;
+
+            let range = null;
+
+            // Try to find across word
+            let startCol = col;
+            while (startCol > 0 && grid[row][startCol - 1] !== '#') startCol--;
+
+            let endCol = col;
+            while (endCol < grid.length - 1 && grid[row][endCol + 1] !== '#') endCol++;
+
+            if (nums[row][startCol]) {
+                range = { dir: 'A', row, startCol, endCol };
+            } else {
+                // Try to find down word
+                let startRow = row;
+                while (startRow > 0 && grid[startRow - 1][col] !== '#') startRow--;
+
+                let endRow = row;
+                while (endRow < grid.length - 1 && grid[endRow + 1][col] !== '#') endRow++;
+
+                range = { dir: 'D', col, startRow, endRow };
+            }
+
+            if (!range) return;
+
+            if (range.dir === 'A') {
+                for (let c = range.startCol; c <= range.endCol; c++) {
+                    const input = E.grid.querySelector(`input[data-row="${range.row}"][data-col="${c}"]`);
+                    const expected = grid[range.row][c];
+
+                    if (input) {
+                        input.value = expected;
+                        input.parentElement.classList.add('correct');
+                        input.parentElement.classList.remove('wrong');
+                    }
+                }
+            } else {
+                for (let r = range.startRow; r <= range.endRow; r++) {
+                    const input = E.grid.querySelector(`input[data-row="${r}"][data-col="${range.col}"]`);
+                    const expected = grid[r][range.col];
+
+                    if (input) {
+                        input.value = expected;
+                        input.parentElement.classList.add('correct');
+                        input.parentElement.classList.remove('wrong');
+                    }
+                }
+            }
+
+            saveProgress();
+        }
+
+        function hintFirstLetter() {
+            const active = document.activeElement;
+            if (!active || active.tagName !== 'INPUT') return;
+
+            const row = +active.dataset.row;
+            const col = +active.dataset.col;
+            const { grid, nums } = STATE;
+
+            // Find the word containing this cell
+            let range = findWordRange(row, col);
+            if (!range) return;
+
+            const firstCell = range.dir === 'A'
+                ? E.grid.querySelector(`input[data-row="${range.row}"][data-col="${range.startCol}"]`)
+                : E.grid.querySelector(`input[data-row="${range.startRow}"][data-col="${range.col}"]`);
+
+            if (firstCell && !firstCell.value) {
+                const expected = range.dir === 'A' ? grid[range.row][range.startCol] : grid[range.startRow][range.col];
+                firstCell.value = expected;
+                firstCell.parentElement.classList.add('correct');
+                firstCell.parentElement.classList.remove('wrong');
+                saveProgress();
+            }
+        }
+
+        function hintLastLetter() {
+            const active = document.activeElement;
+            if (!active || active.tagName !== 'INPUT') return;
+
+            const row = +active.dataset.row;
+            const col = +active.dataset.col;
+            const { grid, nums } = STATE;
+
+            // Find the word containing this cell
+            let range = findWordRange(row, col);
+            if (!range) return;
+
+            const lastCell = range.dir === 'A'
+                ? E.grid.querySelector(`input[data-row="${range.row}"][data-col="${range.endCol}"]`)
+                : E.grid.querySelector(`input[data-row="${range.endRow}"][data-col="${range.col}"]`);
+
+            if (lastCell && !lastCell.value) {
+                const expected = range.dir === 'A' ? grid[range.row][range.endCol] : grid[range.endRow][range.col];
+                lastCell.value = expected;
+                lastCell.parentElement.classList.add('correct');
+                lastCell.parentElement.classList.remove('wrong');
+                saveProgress();
+            }
+        }
+
+        function findWordRange(row, col) {
+            const { grid, nums } = STATE;
+
+            // Try to find across word
+            let startCol = col;
+            while (startCol > 0 && grid[row][startCol - 1] !== '#') startCol--;
+
+            let endCol = col;
+            while (endCol < grid.length - 1 && grid[row][endCol + 1] !== '#') endCol++;
+
+            if (nums[row][startCol]) {
+                return { dir: 'A', row, startCol, endCol };
+            }
+
+            // Try to find down word
+            let startRow = row;
+            while (startRow > 0 && grid[startRow - 1][col] !== '#') startRow--;
+
+            let endRow = row;
+            while (endRow < grid.length - 1 && grid[endRow + 1][col] !== '#') endRow++;
+
+            if (nums[startRow][col]) {
+                return { dir: 'D', col, startRow, endRow };
+            }
+
+            return null;
+        }
+
+        function getInputs() {
+            return [...E.grid.querySelectorAll('input[data-row]')];
+        }
+
+        // ===== Storage =====
+        function saveProgress() {
+            const cells = getInputs().map(input => ({
+                r: +input.dataset.row,
+                c: +input.dataset.col,
+                v: input.value.toUpperCase()
+            }));
+
+            localStorage.setItem(storageKey(STATE.date), JSON.stringify({
+                cells,
+                inline: STATE.inline
+            }));
+        }
+
+        function loadProgress() {
+            const raw = localStorage.getItem(storageKey(STATE.date));
+            if (!raw) return;
+
+            try {
+                const data = JSON.parse(raw);
+                const cellMap = new Map(data.cells.map(cell => [`${cell.r},${cell.c}`, cell.v]));
+
+                for (const input of getInputs()) {
+                    const key = `${input.dataset.row},${input.dataset.col}`;
+                    if (cellMap.has(key)) {
+                        input.value = cellMap.get(key);
+                    }
+                }
+
+                STATE.inline = !!data.inline;
+                E.inlineCheck.checked = STATE.inline;
+
+                if (STATE.inline) {
+                    validateAll(false);
+                }
+            } catch (error) {
+                console.error('Error loading progress:', error);
+            }
+        }
+
+        function clearProgress() {
+            localStorage.removeItem(storageKey(STATE.date));
+
+            for (const input of getInputs()) {
+                input.value = '';
+                input.parentElement.classList.remove('correct', 'wrong');
+            }
+        }
+
+        // ===== Initialization =====
+        function rebuildFor(dateStr) {
+            try {
+                STATE.date = dateStr;
+                setDateLabel(dateStr);
+
+                const rng = seedFromDate(dateStr);
+                const { grid, placements } = generate(ITEMS, rng);
+
+                STATE.grid = grid;
+                STATE.placements = placements;
+                STATE.nums = numberGrid(grid);
+                STATE.clues = buildClues();
+
+                renderGrid();
+                renderClues();
+                loadProgress();
+            } catch (error) {
+                console.error('Error generating crossword:', error);
+                // Show a simple fallback message
+                E.grid.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Error generating crossword. Please try again.</div>';
+                E.across.innerHTML = '';
+                E.down.innerHTML = '';
+            }
+        }
+
+
+        // ===== Keyboard Shortcuts =====
+        function handleGlobalKeyboard(event) {
+            // Only handle shortcuts when not typing in inputs
+            if (event.target.tagName === 'INPUT' && !event.ctrlKey && !event.metaKey) {
+                return;
+            }
+
+            if (event.ctrlKey || event.metaKey) {
+                event.preventDefault();
+                switch (event.key.toLowerCase()) {
+                    case 'a':
+                        validateAll(true);
+                        break;
+                    case 'r':
+                        revealWrong();
+                        break;
+                    case 'w':
+                        revealCurrentWord();
+                        break;
+                    case 'h':
+                        hintFirstLetter();
+                        break;
+                    case 'l':
+                        hintLastLetter();
+                        break;
+                    case 'c':
+                        clearProgress();
+                        break;
+                    case 'i':
+                        E.inlineCheck.checked = !E.inlineCheck.checked;
+                        E.inlineCheck.dispatchEvent(new Event('change'));
+                        break;
+                }
+            }
+        }
+
+        // ===== Event Listeners =====
+        document.addEventListener('keydown', handleGlobalKeyboard);
+
+        E.inlineCheck.addEventListener('change', () => {
+            STATE.inline = E.inlineCheck.checked;
+            saveProgress();
+
+            if (STATE.inline) {
+                validateAll(false);
+            } else {
+                for (const input of getInputs()) {
+                    input.parentElement.classList.remove('correct', 'wrong');
+                }
+            }
+        });
+
+        E.loadDate.addEventListener('click', () => {
+            const dateStr = E.datePick.value || todayStr();
+            rebuildFor(dateStr);
+        });
+        E.clearBtn.addEventListener('click', clearProgress);
+        E.checkAll.addEventListener('click', () => validateAll(true));
+        E.revealWrong.addEventListener('click', revealWrong);
+        E.revealWord.addEventListener('click', revealCurrentWord);
+        E.hintFirst.addEventListener('click', hintFirstLetter);
+        E.hintLast.addEventListener('click', hintLastLetter);
+
+        // ===== Initialize Application =====
+        E.datePick.value = todayStr();
+        rebuildFor(todayStr());
+    </script>
 </body>
 
 </html>
