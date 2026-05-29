@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
     <title>SITS & Giggles</title>
     <style>
         :root {
@@ -34,11 +35,17 @@
 
         html,
         body {
-            height: 100%;
+            min-height: 100%;
             font-family: var(--sans);
             color: var(--fg);
             background: var(--bg);
-            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
         /* Header */
@@ -103,13 +110,15 @@
 
         /* Main layout */
         .main-container {
-            height: calc(100vh - 80px);
+            width: 100%;
             max-width: 1400px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 24px;
             padding: 24px;
+            flex: 1;
+            min-height: 0;
         }
 
         /* Grid section */
@@ -121,12 +130,14 @@
             box-shadow: var(--shadow);
             display: flex;
             flex-direction: column;
+            min-height: 0;
         }
 
         .grid {
             --size: 42px;
             height: 100%;
             overflow: auto;
+            min-height: 320px;
             border: 1px solid #e3e7f3;
             border-radius: 12px;
             background: var(--grid);
@@ -343,6 +354,12 @@
             background: rgba(43, 106, 255, 0.05);
             border-radius: 8px;
             border-left: 4px solid var(--accent);
+        }
+
+        .error-message {
+            color: #666;
+            padding: 20px;
+            text-align: center;
         }
 
         .grid-controls {
@@ -694,7 +711,8 @@
             nums: null,
             clues: null,
             placements: null,
-            inline: false
+            inline: false,
+            activeDirection: 'across'
         };
 
         // ===== Utility Functions =====
@@ -1013,7 +1031,7 @@
 
         // ===== UI Rendering =====
         function renderGrid() {
-            E.grid.innerHTML = '';
+            E.grid.replaceChildren();
             const { grid, nums } = STATE;
 
             grid.forEach((row, rowIndex) => {
@@ -1041,6 +1059,7 @@
 
                         input.addEventListener('input', handleInput);
                         input.addEventListener('keydown', handleKeydown);
+                        input.addEventListener('focus', () => highlightCurrentWord(rowIndex, colIndex, STATE.activeDirection));
 
                         cellEl.appendChild(input);
                     }
@@ -1129,14 +1148,27 @@
                 const wordStatus = getWordStatus(clue, direction);
                 const statusIcon = getStatusIcon(wordStatus);
 
-                li.innerHTML = `
-      <div class="clue-item-content">
-        <strong class="clue-label">${label}:</strong>
-        <span class="clue-text">${escapeHtml(clue.clue)}</span>
-        <span class="direction-tag clue-direction-tag">${direction}</span>
-        <span class="status-icon clue-status-icon">${statusIcon}</span>
-      </div>
-    `;
+                const content = document.createElement('div');
+                content.className = 'clue-item-content';
+
+                const labelEl = document.createElement('strong');
+                labelEl.className = 'clue-label';
+                labelEl.textContent = `${label}:`;
+
+                const clueText = document.createElement('span');
+                clueText.className = 'clue-text';
+                clueText.textContent = clue.clue;
+
+                const directionTag = document.createElement('span');
+                directionTag.className = 'direction-tag clue-direction-tag';
+                directionTag.textContent = direction;
+
+                const status = document.createElement('span');
+                status.className = 'status-icon clue-status-icon';
+                status.textContent = statusIcon;
+
+                content.append(labelEl, ' ', clueText, ' ', directionTag, ' ', status);
+                li.appendChild(content);
 
                 li.title = `Answer format: ${clue.code} | Click to highlight word`;
                 li.addEventListener('click', () => highlightWord(clue, direction));
@@ -1147,8 +1179,8 @@
                 return li;
             }
 
-            E.across.innerHTML = '';
-            E.down.innerHTML = '';
+            E.across.replaceChildren();
+            E.down.replaceChildren();
 
             STATE.clues.across.forEach(clue =>
                 E.across.appendChild(createClueItem(clue, 'Across'))
@@ -1174,7 +1206,7 @@
             if (input.value) {
                 const row = +input.dataset.row;
                 const col = +input.dataset.col;
-                moveToNextCell(row, col, 'right');
+                moveToNextCell(row, col, STATE.activeDirection === 'down' ? 'down' : 'right');
             }
         }
 
@@ -1207,7 +1239,9 @@
                 // Clear current cell and move right
                 event.preventDefault();
                 input.value = '';
+                input.parentElement.classList.remove('correct', 'wrong');
                 saveProgress();
+                updateClueStatus();
                 moveToNextCell(row, col, 'right');
             } else if (event.key === 'Enter') {
                 event.preventDefault();
@@ -1218,11 +1252,11 @@
             }
         }
 
-        function focusCell(row, col) {
+        function focusCell(row, col, direction = STATE.activeDirection) {
             const input = E.grid.querySelector(`input[data-row="${row}"][data-col="${col}"]`);
             if (input) {
                 input.focus();
-                highlightCurrentWord(row, col);
+                highlightCurrentWord(row, col, direction);
             }
         }
 
@@ -1249,10 +1283,18 @@
             // Sort by number
             allWords.sort((a, b) => a.num - b.num);
 
-            // Find current word
-            const currentWordIndex = allWords.findIndex(word =>
-                word.row === currentRow && word.col === currentCol
-            );
+            const currentRange = findWordRange(currentRow, currentCol, STATE.activeDirection);
+
+            // Find current word, even when focus is in the middle of a word.
+            const currentWordIndex = allWords.findIndex(word => {
+                if (!currentRange) return word.row === currentRow && word.col === currentCol;
+
+                const rangeDir = currentRange.dir === 'A' ? 'across' : 'down';
+                const rangeRow = currentRange.dir === 'A' ? currentRange.row : currentRange.startRow;
+                const rangeCol = currentRange.dir === 'A' ? currentRange.startCol : currentRange.col;
+
+                return word.dir === rangeDir && word.row === rangeRow && word.col === rangeCol;
+            });
 
             if (currentWordIndex === -1) return;
 
@@ -1265,33 +1307,27 @@
             }
 
             const nextWord = allWords[nextIndex];
-            focusCell(nextWord.row, nextWord.col);
+            STATE.activeDirection = nextWord.dir;
+            focusCell(nextWord.row, nextWord.col, nextWord.dir);
         }
 
         function toggleDirection(row, col) {
-            const { grid, nums } = STATE;
+            const { grid } = STATE;
 
             // Check if current cell is part of both across and down words
-            const hasAcross = (col === 0 || grid[row][col - 1] === '#') &&
+            const hasAcross = (col > 0 && grid[row][col - 1] !== '#') ||
                 (col + 1 < grid.length && grid[row][col + 1] !== '#');
-            const hasDown = (row === 0 || grid[row - 1][col] === '#') &&
+            const hasDown = (row > 0 && grid[row - 1][col] !== '#') ||
                 (row + 1 < grid.length && grid[row + 1][col] !== '#');
 
             if (hasAcross && hasDown) {
-                // Toggle between across and down highlighting
-                const currentHighlight = E.grid.querySelector('.word-highlight');
-                if (currentHighlight) {
-                    // Find the other direction and highlight it
-                    const range = findWordRange(row, col);
-                    if (range) {
-                        highlightWordByRange(range);
-                    }
-                }
+                STATE.activeDirection = STATE.activeDirection === 'across' ? 'down' : 'across';
+                highlightCurrentWord(row, col, STATE.activeDirection);
             }
         }
 
-        function highlightCurrentWord(row, col) {
-            const range = findWordRange(row, col);
+        function highlightCurrentWord(row, col, direction = STATE.activeDirection) {
+            const range = findWordRange(row, col, direction);
             if (range) {
                 highlightWordByRange(range);
             }
@@ -1323,6 +1359,12 @@
             const N = STATE.grid.length;
             let newRow = currentRow;
             let newCol = currentCol;
+
+            if (direction === 'left' || direction === 'right') {
+                STATE.activeDirection = 'across';
+            } else if (direction === 'up' || direction === 'down') {
+                STATE.activeDirection = 'down';
+            }
 
             switch (direction) {
                 case 'right':
@@ -1364,6 +1406,7 @@
                 const nextInput = E.grid.querySelector(`input[data-row="${newRow}"][data-col="${newCol}"]`);
                 if (nextInput) {
                     nextInput.focus();
+                    highlightCurrentWord(newRow, newCol, STATE.activeDirection);
                     // Clear the next cell if it has content (for easy retyping)
                     if (nextInput.value) {
                         nextInput.select();
@@ -1472,6 +1515,7 @@
 
             const { grid } = STATE;
             const isAcross = direction.toLowerCase() === 'across';
+            STATE.activeDirection = isAcross ? 'across' : 'down';
             const cells = [];
 
             if (isAcross) {
@@ -1500,7 +1544,7 @@
 
             const targetCell = firstEmpty || cells[0];
             if (targetCell) {
-                focusCell(targetCell.row, targetCell.col);
+                focusCell(targetCell.row, targetCell.col, STATE.activeDirection);
             }
         }
 
@@ -1516,7 +1560,7 @@
 
             [...E.across.querySelectorAll('.clue-item'), ...E.down.querySelectorAll('.clue-item')].forEach(item => {
                 const clueNum = parseInt(item.dataset.clueNum);
-                const direction = item.dataset.direction;
+                const direction = item.dataset.direction.toLowerCase();
 
                 // Find the clue data
                 const clues = direction === 'across' ? STATE.clues.across : STATE.clues.down;
@@ -1602,6 +1646,7 @@
             }
 
             saveProgress();
+            updateClueStatus();
         }
 
         function revealCurrentWord() {
@@ -1610,29 +1655,8 @@
 
             const row = +active.dataset.row;
             const col = +active.dataset.col;
-            const { grid, nums } = STATE;
-
-            let range = null;
-
-            // Try to find across word
-            let startCol = col;
-            while (startCol > 0 && grid[row][startCol - 1] !== '#') startCol--;
-
-            let endCol = col;
-            while (endCol < grid.length - 1 && grid[row][endCol + 1] !== '#') endCol++;
-
-            if (nums[row][startCol]) {
-                range = { dir: 'A', row, startCol, endCol };
-            } else {
-                // Try to find down word
-                let startRow = row;
-                while (startRow > 0 && grid[startRow - 1][col] !== '#') startRow--;
-
-                let endRow = row;
-                while (endRow < grid.length - 1 && grid[endRow + 1][col] !== '#') endRow++;
-
-                range = { dir: 'D', col, startRow, endRow };
-            }
+            const { grid } = STATE;
+            const range = findWordRange(row, col, STATE.activeDirection);
 
             if (!range) return;
 
@@ -1661,6 +1685,7 @@
             }
 
             saveProgress();
+            updateClueStatus();
         }
 
         function hintFirstLetter() {
@@ -1669,10 +1694,10 @@
 
             const row = +active.dataset.row;
             const col = +active.dataset.col;
-            const { grid, nums } = STATE;
+            const { grid } = STATE;
 
             // Find the word containing this cell
-            let range = findWordRange(row, col);
+            let range = findWordRange(row, col, STATE.activeDirection);
             if (!range) return;
 
             const firstCell = range.dir === 'A'
@@ -1685,6 +1710,7 @@
                 firstCell.parentElement.classList.add('correct');
                 firstCell.parentElement.classList.remove('wrong');
                 saveProgress();
+                updateClueStatus();
             }
         }
 
@@ -1694,10 +1720,10 @@
 
             const row = +active.dataset.row;
             const col = +active.dataset.col;
-            const { grid, nums } = STATE;
+            const { grid } = STATE;
 
             // Find the word containing this cell
-            let range = findWordRange(row, col);
+            let range = findWordRange(row, col, STATE.activeDirection);
             if (!range) return;
 
             const lastCell = range.dir === 'A'
@@ -1710,35 +1736,35 @@
                 lastCell.parentElement.classList.add('correct');
                 lastCell.parentElement.classList.remove('wrong');
                 saveProgress();
+                updateClueStatus();
             }
         }
 
-        function findWordRange(row, col) {
-            const { grid, nums } = STATE;
+        function findWordRange(row, col, preferredDirection = STATE.activeDirection) {
+            const { grid } = STATE;
+            const ranges = [];
 
-            // Try to find across word
             let startCol = col;
             while (startCol > 0 && grid[row][startCol - 1] !== '#') startCol--;
 
             let endCol = col;
             while (endCol < grid.length - 1 && grid[row][endCol + 1] !== '#') endCol++;
 
-            if (nums[row][startCol]) {
-                return { dir: 'A', row, startCol, endCol };
+            if (endCol > startCol) {
+                ranges.push({ dir: 'A', direction: 'across', row, startCol, endCol });
             }
 
-            // Try to find down word
             let startRow = row;
             while (startRow > 0 && grid[startRow - 1][col] !== '#') startRow--;
 
             let endRow = row;
             while (endRow < grid.length - 1 && grid[endRow + 1][col] !== '#') endRow++;
 
-            if (nums[startRow][col]) {
-                return { dir: 'D', col, startRow, endRow };
+            if (endRow > startRow) {
+                ranges.push({ dir: 'D', direction: 'down', col, startRow, endRow });
             }
 
-            return null;
+            return ranges.find(range => range.direction === preferredDirection) || ranges[0] || null;
         }
 
         function getInputs() {
@@ -1792,6 +1818,8 @@
                 input.value = '';
                 input.parentElement.classList.remove('correct', 'wrong');
             }
+
+            updateClueStatus();
         }
 
         // ===== Initialization =====
@@ -1811,12 +1839,16 @@
                 renderGrid();
                 renderClues();
                 loadProgress();
+                updateClueStatus();
             } catch (error) {
                 console.error('Error generating crossword:', error);
                 // Show a simple fallback message
-                E.grid.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Error generating crossword. Please try again.</div>';
-                E.across.innerHTML = '';
-                E.down.innerHTML = '';
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.textContent = 'Error generating crossword. Please try again.';
+                E.grid.replaceChildren(errorMessage);
+                E.across.replaceChildren();
+                E.down.replaceChildren();
             }
         }
 
