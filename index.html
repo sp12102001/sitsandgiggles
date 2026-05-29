@@ -712,7 +712,8 @@
             clues: null,
             placements: null,
             inline: false,
-            activeDirection: 'across'
+            activeDirection: 'across',
+            selectedCell: null
         };
 
         // ===== Utility Functions =====
@@ -1059,7 +1060,10 @@
 
                         input.addEventListener('input', handleInput);
                         input.addEventListener('keydown', handleKeydown);
-                        input.addEventListener('focus', () => highlightCurrentWord(rowIndex, colIndex, STATE.activeDirection));
+                        input.addEventListener('focus', () => {
+                            rememberSelectedCell(rowIndex, colIndex);
+                            highlightCurrentWord(rowIndex, colIndex, STATE.activeDirection);
+                        });
 
                         cellEl.appendChild(input);
                     }
@@ -1193,6 +1197,10 @@
         // ===== Input and Navigation =====
         function handleInput(event) {
             const input = event.target;
+            const row = +input.dataset.row;
+            const col = +input.dataset.col;
+            rememberSelectedCell(row, col);
+
             input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 1);
 
             if (STATE.inline) {
@@ -1204,8 +1212,6 @@
 
             // Auto-advance to next cell when typing (immediate, no delay)
             if (input.value) {
-                const row = +input.dataset.row;
-                const col = +input.dataset.col;
                 moveToNextCell(row, col, STATE.activeDirection === 'down' ? 'down' : 'right');
             }
         }
@@ -1253,11 +1259,36 @@
         }
 
         function focusCell(row, col, direction = STATE.activeDirection) {
-            const input = E.grid.querySelector(`input[data-row="${row}"][data-col="${col}"]`);
+            const input = getCellInput(row, col);
             if (input) {
+                STATE.activeDirection = direction;
+                rememberSelectedCell(row, col);
                 input.focus();
+                input.select();
                 highlightCurrentWord(row, col, direction);
             }
+        }
+
+        function rememberSelectedCell(row, col) {
+            STATE.selectedCell = { row, col };
+        }
+
+        function getCellInput(row, col) {
+            return E.grid.querySelector(`input[data-row="${row}"][data-col="${col}"]`);
+        }
+
+        function getSelectedInput() {
+            const active = document.activeElement;
+
+            if (active && active.tagName === 'INPUT' && active.dataset.row !== undefined) {
+                return active;
+            }
+
+            if (!STATE.selectedCell) {
+                return getInputs()[0] || null;
+            }
+
+            return getCellInput(STATE.selectedCell.row, STATE.selectedCell.col);
         }
 
         function moveToNextWord(currentRow, currentCol, reverse = false) {
@@ -1629,6 +1660,8 @@
                     cell.classList.add('wrong');
                 }
             }
+
+            updateClueStatus();
         }
 
         function revealWrong() {
@@ -1650,8 +1683,8 @@
         }
 
         function revealCurrentWord() {
-            const active = document.activeElement;
-            if (!active || active.tagName !== 'INPUT') return;
+            const active = getSelectedInput();
+            if (!active) return;
 
             const row = +active.dataset.row;
             const col = +active.dataset.col;
@@ -1689,8 +1722,8 @@
         }
 
         function hintFirstLetter() {
-            const active = document.activeElement;
-            if (!active || active.tagName !== 'INPUT') return;
+            const active = getSelectedInput();
+            if (!active) return;
 
             const row = +active.dataset.row;
             const col = +active.dataset.col;
@@ -1704,19 +1737,22 @@
                 ? E.grid.querySelector(`input[data-row="${range.row}"][data-col="${range.startCol}"]`)
                 : E.grid.querySelector(`input[data-row="${range.startRow}"][data-col="${range.col}"]`);
 
-            if (firstCell && !firstCell.value) {
+            if (firstCell) {
                 const expected = range.dir === 'A' ? grid[range.row][range.startCol] : grid[range.startRow][range.col];
-                firstCell.value = expected;
-                firstCell.parentElement.classList.add('correct');
-                firstCell.parentElement.classList.remove('wrong');
-                saveProgress();
-                updateClueStatus();
+
+                if (firstCell.value.toUpperCase() !== expected) {
+                    firstCell.value = expected;
+                    firstCell.parentElement.classList.add('correct');
+                    firstCell.parentElement.classList.remove('wrong');
+                    saveProgress();
+                    updateClueStatus();
+                }
             }
         }
 
         function hintLastLetter() {
-            const active = document.activeElement;
-            if (!active || active.tagName !== 'INPUT') return;
+            const active = getSelectedInput();
+            if (!active) return;
 
             const row = +active.dataset.row;
             const col = +active.dataset.col;
@@ -1730,13 +1766,16 @@
                 ? E.grid.querySelector(`input[data-row="${range.row}"][data-col="${range.endCol}"]`)
                 : E.grid.querySelector(`input[data-row="${range.endRow}"][data-col="${range.col}"]`);
 
-            if (lastCell && !lastCell.value) {
+            if (lastCell) {
                 const expected = range.dir === 'A' ? grid[range.row][range.endCol] : grid[range.endRow][range.col];
-                lastCell.value = expected;
-                lastCell.parentElement.classList.add('correct');
-                lastCell.parentElement.classList.remove('wrong');
-                saveProgress();
-                updateClueStatus();
+
+                if (lastCell.value.toUpperCase() !== expected) {
+                    lastCell.value = expected;
+                    lastCell.parentElement.classList.add('correct');
+                    lastCell.parentElement.classList.remove('wrong');
+                    saveProgress();
+                    updateClueStatus();
+                }
             }
         }
 
@@ -1835,6 +1874,7 @@
                 STATE.placements = placements;
                 STATE.nums = numberGrid(grid);
                 STATE.clues = buildClues();
+                STATE.selectedCell = null;
 
                 renderGrid();
                 renderClues();
