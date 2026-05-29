@@ -4,6 +4,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-i7X/JEtIbBFNF28gzfJE0cZd8rsKNDDSyCgEErMihAU='; style-src 'sha256-pDyqNgS+lbPw6v3PjNAYmbKjDUwIHQAS6K79VQmN9ys='; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests">
+    <meta name="referrer" content="no-referrer" />
     <title>SITS & Giggles</title>
     <style>
         :root {
@@ -353,6 +355,12 @@
             background: rgba(43, 106, 255, 0.05);
             border-radius: 8px;
             border-left: 4px solid var(--accent);
+        }
+
+        .error-message {
+            color: #666;
+            padding: 20px;
+            text-align: center;
         }
 
         .grid-controls {
@@ -1024,7 +1032,7 @@
 
         // ===== UI Rendering =====
         function renderGrid() {
-            E.grid.innerHTML = '';
+            E.grid.replaceChildren();
             const { grid, nums } = STATE;
 
             grid.forEach((row, rowIndex) => {
@@ -1141,14 +1149,27 @@
                 const wordStatus = getWordStatus(clue, direction);
                 const statusIcon = getStatusIcon(wordStatus);
 
-                li.innerHTML = `
-      <div class="clue-item-content">
-        <strong class="clue-label">${label}:</strong>
-        <span class="clue-text">${escapeHtml(clue.clue)}</span>
-        <span class="direction-tag clue-direction-tag">${direction}</span>
-        <span class="status-icon clue-status-icon">${statusIcon}</span>
-      </div>
-    `;
+                const content = document.createElement('div');
+                content.className = 'clue-item-content';
+
+                const labelEl = document.createElement('strong');
+                labelEl.className = 'clue-label';
+                labelEl.textContent = `${label}:`;
+
+                const clueText = document.createElement('span');
+                clueText.className = 'clue-text';
+                clueText.textContent = clue.clue;
+
+                const directionTag = document.createElement('span');
+                directionTag.className = 'direction-tag clue-direction-tag';
+                directionTag.textContent = direction;
+
+                const status = document.createElement('span');
+                status.className = 'status-icon clue-status-icon';
+                status.textContent = statusIcon;
+
+                content.append(labelEl, ' ', clueText, ' ', directionTag, ' ', status);
+                li.appendChild(content);
 
                 li.title = `Answer format: ${clue.code} | Click to highlight word`;
                 li.addEventListener('click', () => highlightWord(clue, direction));
@@ -1159,8 +1180,8 @@
                 return li;
             }
 
-            E.across.innerHTML = '';
-            E.down.innerHTML = '';
+            E.across.replaceChildren();
+            E.down.replaceChildren();
 
             STATE.clues.across.forEach(clue =>
                 E.across.appendChild(createClueItem(clue, 'Across'))
@@ -1823,9 +1844,12 @@
             } catch (error) {
                 console.error('Error generating crossword:', error);
                 // Show a simple fallback message
-                E.grid.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Error generating crossword. Please try again.</div>';
-                E.across.innerHTML = '';
-                E.down.innerHTML = '';
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.textContent = 'Error generating crossword. Please try again.';
+                E.grid.replaceChildren(errorMessage);
+                E.across.replaceChildren();
+                E.down.replaceChildren();
             }
         }
 
