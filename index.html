@@ -489,201 +489,25 @@
         "use strict";
 
         // ===== Constants and Configuration =====
-        const ITEMS = [
-            { code: "AA1", func: "Menu System - Low Level Functions (MEN01)" },
-            { code: "AAC", func: "Authentication & Authorisation Control Menu System, primarily for Supervisor Functions (MEN02)" },
-            { code: "AAL", func: "Authentication & Authorisation Log Menu System, primarily for Supervisor Functions (MEN02)" },
-            { code: "AAM", func: "Manages accessibility records for students. Also referenced as King's Inclusion Plan (KIP) in PT Dashboard panels." },
-            { code: "AAR", func: "Stores records related to accessibility assessments (SRS)." },
-            { code: "ABP", func: "Handles automated business procedures (Deprecated)." },
-            { code: "ACD", func: "Screen used to apply application decisions and manage clearance checks (e.g., view Qualifications, Offer text)." },
-            { code: "ADC", func: "Menu System - Supervisor Functions (MEN02) for archive management." },
-            { code: "ADD", func: "Records basic address data for students (Students - Basic Data component)." },
-            { code: "ADB", func: "Menu System - Supervisor Functions (MEN02) for viewing API debug messages." },
-            { code: "ADL", func: "Used to retrieve a set of Course Application (CAP) records before applying a decision." },
-            { code: "AED", func: "Menu System - Supervisor Functions (MEN02) for viewing archive export details." },
-            { code: "AEN", func: "Menu System - Supervisor Functions (MEN02) related to address entities." },
-            { code: "AFL", func: "Menu System - Supervisor Functions (MEN02) for audit tracking." },
-            { code: "APH", func: "Menu System - Supervisor Functions (MEN02) for auditing program history." },
-            { code: "APL", func: "Logs approval requests within the system." },
-            { code: "APT", func: "Defines the type of approvals needed in the system." },
-            { code: "ARC", func: "Maintenance screen used for defining tables for archiving." },
-            { code: "ARP", func: "Stores Accessibility Assessment Requirements and Providers (SRS)." },
-            { code: "ATY", func: "Defines types of addresses (Students - Basic Data component)." },
-            { code: "AUD", func: "Stores the details of system changes (Auditing Maintenance)." },
-            { code: "AUH", func: "Stores history of changes logged by AUD (Auditing Maintenance)." },
-            { code: "AUO", func: "Menu System - Supervisor Functions (MEN02)." },
-            { code: "AVG", func: "Basic Data entity for Awards and Validating Bodies." },
-            { code: "AWD", func: "Defines the classification and details of an academic award." },
-            { code: "BDC", func: "SITS e:Vision utility to specify which columns are included in a bulk download." },
-            { code: "BDE", func: "SV Connector for LMS/VLE IMS integration concerning Person/Course data." },
-            { code: "BDO", func: "SITS e:Vision utility for defining bulk download configuration." },
-            { code: "BLQ", func: "Queue management for batch letters." },
-            { code: "BLR", func: "Stores records of letters processed in batches." },
-            { code: "BPC", func: "Supervisor screen used for setting up and controlling batch programs." },
-            { code: "BPL", func: "Log results and details of batch processor runs." },
-            { code: "BSL", func: "Used for managing and running batch standard letters." },
-            { code: "CAL", func: "SITS e:Vision record for Campaign and Communications Management (SV305)." },
-            { code: "CAT", func: "Generic table for category maintenance (Supervisor Functions)." },
-            { code: "CBK", func: "Defines FTE factors, fee profiles, and course structure for a specific course block." },
-            { code: "CBO", func: "Defines the specific instance (Academic Year, Study Level, Dates) in which a course block runs." },
-            { code: "CCI", func: "Records related to consent confirmation (Low Level Functions)." },
-            { code: "CDE", func: "Used in StuTalk Web Services (MEN14)." },
-            { code: "CDT", func: "Used in StuTalk Web Services (MEN14)." },
-            { code: "CER", func: "Certificate Data used for Award certificate printing." },
-            { code: "CFF", func: "Defines fields within a Certificate Form for Award certificate printing." },
-            { code: "CFM", func: "Defines forms used for Award certificate printing." },
-            { code: "CGR", func: "SITS e:Vision entity related to the Portal (SV102) configuration." },
-            { code: "CHL", func: "Log for Hot Prospects in Campaign and Communications Management." },
-            { code: "CKC", func: "Menu system for Award certificate printing keyword control." },
-            { code: "CLL", func: "SITS e:Vision entity for Campaign and Communications Management." },
-            { code: "CMY", func: "Holds logistical details about an awards ceremony." },
-            { code: "COM", func: "Maintenance screen for defining components (Menu Maintenance)." },
-            { code: "CON", func: "Represents a section or box within an e:Vision tab/page; controlled by Role Groups (RGD)." },
-            { code: "COP", func: "Represents a clickable option or function within a Container (CON)." },
-            { code: "CPG", func: "Configured as Tabs that appear across the top of the Student Records window in e:Vision." },
-            { code: "CPP", func: "Used in Progression and Assessment management." },
-            { code: "CQA", func: "Defines the qualification and award (AWD) a student receives upon completion of a course." },
-            { code: "CRS", func: "The main record for course information (Code, Name, Mode of Attendance, Faculty/Dept, Tutor)." },
-            { code: "CSL", func: "Menu System - Supervisor Functions (MEN02) for server cache logging." },
-            { code: "CUS", func: "Maintenance screen for customer details (Supervisor Functions)." },
-            { code: "DAL", func: "Logs access to documents (Document Manager)." },
-            { code: "DBT", func: "Finance record storing information on debtors." },
-            { code: "DEC", func: "Reference data for Admissions Decision Codes." },
-            { code: "DME", func: "SITS e:Vision - Web Vistas component for error tracking." },
-            { code: "DMF", func: "SITS e:Vision - Web Vistas component defining fields for maintenance." },
-            { code: "DMV", func: "Core screen for creating and managing web vistas (SITS e:Vision)." },
-            { code: "DOC", func: "Primary table for Document Management." },
-            { code: "DPC", func: "Used in the Data Rectification menu for defining data protection categories." },
-            { code: "DPR", func: "Used in the Data Rectification menu for managing data protection requests." },
-            { code: "DRR", func: "Links a Document (DOC) record to another entity (e.g., STU)." },
-            { code: "DSB", func: "Reference data screen for Disability codes." },
-            { code: "DSH", func: "Reference data for additional disability and health conditions (linked to enrolment tasks)." },
-            { code: "DTY", func: "Defines types of documents managed by the Document Manager." },
-            { code: "DUO", func: "SITS e:Vision entity defining options for document uploads." },
-            { code: "EEX", func: "Stores details and contact information for External Examiners." },
-            { code: "ELJ", func: "Used in Finance (SAMD menu) for manual journal posting." },
-            { code: "EML", func: "Menu System screen for email maintenance." },
-            { code: "ESD", func: "Stores records pertaining to potential students (Enquiry Process menu)." },
-            { code: "EXR", func: "Primary entity for tracking and processing Extenuating Circumstance Requests (MCFs)." },
-            { code: "FEX", func: "Menu System for defining valid file extensions." },
-            { code: "FLD", func: "Uniface Field Definitions maintenance (Supervisor Functions)." },
-            { code: "FTS", func: "Menu System - Supervisor Functions (MEN02) related to file type configuration." },
-            { code: "FTY", func: "Menu System - Supervisor Functions (MEN02)." },
-            { code: "GII", func: "Used within the GradIntel system (SRS33)." },
-            { code: "GIO", func: "Manages data export (e.g., HEAR XML/PDF) from GradIntel system." },
-            { code: "GLR", func: "Stores records of generated letters." },
-            { code: "GRP", func: "Menu System - Low Level Functions (MEN01) related to processing groups/batches." },
-            { code: "GSL", func: "Supervisor screen for generating standard letters." },
-            { code: "GTK", func: "Low Level Functions (MEN01) and used in General Tasks management." },
-            { code: "GTT", func: "Records transactions related to General Tasks." },
-            { code: "HIN", func: "Stores HESA Instance Data (Statutory Reporting)." },
-            { code: "HST", func: "Stores HESA Student Data (Statutory Reporting)." },
-            { code: "IPU", func: "Details of a user accessing the Institution Published Programme (IPP) system." },
-            { code: "LGE", func: "Defines the entities associated with a Standard Letter Group (SLG)." },
-            { code: "LGH", func: "Finance record for Ledger Header details." },
-            { code: "LGT", func: "Stores Ledger Transaction Records (Finance component)." },
-            { code: "LLM", func: "Menu System for Language Localisation (MEN06)." },
-            { code: "LTS", func: "Menu System - Supervisor Functions (MEN02) for reusable text snippets." },
-            { code: "MAB", func: "Stores assessment pattern details, weightings, and qualifying marks for modules." },
-            { code: "MAI", func: "Menu System entity for storing additional identities linked to a Master Person record." },
-            { code: "MAV", func: "The definitive record (gold source data) detailing module availability, scheme, level, and assessment pattern for an academic year." },
-            { code: "MCR", func: "Stores the details of courses applicants apply to (Admissions Reference Data)." },
-            { code: "MEC", func: "Controls system messages (Supervisor Functions)." },
-            { code: "MFA", func: "Stores attachments related to messages/tasks (e:Vision Basic Data)." },
-            { code: "MHD", func: "Stores header information for messages/tasks, often containing task specific metadata (e.g., SCJ/SCE codes)." },
-            { code: "MNB", func: "Used to display notices after a successful login to the WinLog application." },
-            { code: "MOD", func: "Stores core Module details (Curriculum Management)." },
-            { code: "MOA", func: "Reference data for Programme Mode of Attendance (e.g., Full Time, Part Time)." },
-            { code: "MPA", func: "Used to assign staff (Personnel) to specific roles/appointments (e.g., OPAMA_REPORTS)." },
-            { code: "MUA", func: "Supervisor screen used to find or retrieve a student via email address or K-Number." },
-            { code: "NAE", func: "Menu System - Supervisor Functions (MEN02) for defining next action rules." },
-            { code: "OBR", func: "Stores object resource details for the Process Manager." },
-            { code: "OCL", func: "Low Level Function link between Organisation (ORG) and Contact." },
-            { code: "ORG", func: "Communication Relationship Master (CRM) record for an Organisation." },
-            { code: "PAL", func: "Logs program access in the client/server environment." },
-            { code: "PCO", func: "User-specific maintenance screen for containers in e:Vision." },
-            { code: "PCP", func: "User-specific maintenance screen for container options in e:Vision." },
-            { code: "PEL", func: "Menu System listing the entities a program has access to." },
-            { code: "PFL", func: "Menu System listing the fields a program has access to (used for defining default SYP values)." },
-            { code: "PIT", func: "Used in progression rule definition." },
-            { code: "PLM", func: "Used in Ceremony Maintenance to select the planning mode." },
-            { code: "POD", func: "Links Container Options (COP) to the relevant SRL (Standard Report/Letter) or SIW." },
-            { code: "PRA", func: "Manages access levels (Run, Write, Delete) for programs and is key to program auditing." },
-            { code: "PRG", func: "Defines the unique identifier and name of a qualification program (e.g., Bachelor of Arts (Hons))." },
-            { code: "PRS", func: "Stores core staff/personnel details, including name, email, and NINO." },
-            { code: "PRU", func: "Links a programme (PRG) to an associated route (ROU) to define valid combinations." },
-            { code: "PSA", func: "Process screen used to calculate awards for students." },
-            { code: "RDE", func: "Stores lifecycle events for research degrees (e.g., interruption events)." },
-            { code: "RGD", func: "Defines role groups used to control user access to Containers (CON) in e:Vision." },
-            { code: "ROU", func: "Defines a specific academic route associated with a Programme." },
-            { code: "SAW", func: "Records the academic award a student has achieved (used for graduation eligibility)." },
-            { code: "SCE", func: "Records the student's enrolment status, history, and current course block/occurrence details." },
-            { code: "SCY", func: "Used for generating ceremony scripts and tracking student attendance/guest seating." },
-            { code: "SDE", func: "Records events for Event Driven Reporting (Statutory Reporting/Compliance)." },
-            { code: "SLG", func: "Defines groups under which Standard Letters (SRL) are organized." },
-            { code: "SLP", func: "Defines parameters, variables, and logic used by SRLs or other programs (P in SDG_P)." },
-            { code: "SMC", func: "Stores student module credit information." },
-            { code: "SMO", func: "Stores records of modules a student is taking/registered on (used in XSM updates)." },
-            { code: "SMR", func: "Stores student module level result status." },
-            { code: "SMS", func: "Stores student module selections (used in bulk updates, registration)." },
-            { code: "SNK", func: "Stores Next of Kin/Emergency Contact Details." },
-            { code: "SQE", func: "Stores details of a student's qualifications and experience." },
-            { code: "SPR", func: "Core student record: details the student's Programme (PRG) and Route (ROU), containing key progression and assessment data." },
-            { code: "STU", func: "Core student record: stores personal details, identifiers (e.g., NINO, UCID), email, address, and status." },
-            { code: "SYP", func: "Stores global system configuration values that affect behavior across SITS and e:Vision." },
-            { code: "TKT", func: "The main screen defining a task code (used across the entire task system)." },
-            { code: "TTE", func: "Defines each step or 'page' within a Task (TKT), including the step name, description, and navigation logic (Next Steps/Error Steps)." },
-            { code: "TTQ", func: "Defines specific questions that appear within a Task Element (TTE)." },
-            { code: "TTU", func: "Used within tasks to perform direct table updates (e.g., updating seat numbers in Graduation)." },
-            { code: "UDC", func: "Top-level screen used to create a 'collection' of User Define Updates (UDU)." },
-            { code: "UDU", func: "Defines the individual steps/updates within an update collection and sets corresponding permissions." },
-            { code: "UGC", func: "Supervisor function used to control which user groups have sufficient access (run/write/delete levels) for specific programs/tables." },
-            { code: "USR", func: "Manages user access, login credentials, and security roles." },
-            { code: "VCR", func: "Primary screen for managing Visa CAS Requests (Points Based Immigration component)." },
-            { code: "VCO", func: "Links the Course (CRS) record to valid Programme (PRG) and Route (ROU) combinations." },
-            { code: "WSS", func: "Retrieves examination profiles and links allocated students to rooms, dates, and times." },
-            { code: "XCLRM", func: "Screen used to manage Clearing applications and apply decisions." },
-            { code: "XSM", func: "Process screen used for performing bulk addition or removal of modules for students." },
-            { code: "XPC", func: "Used for exporting data from one common screen at a time." },
-            { code: "XPU", func: "Used for exporting data across multiple related screens/entities." },
-            { code: "ADB", func: "Menu System for API Debug Messages (Supervisor Functions)." },
-            { code: "ADP", func: "Used in Exam Scheduling." },
-            { code: "ADR", func: "Assessment Reports screen for viewing due dates (CAM_XALT)." },
-            { code: "APHF", func: "Menu System for Audit Program History Field Changes (Supervisor Functions)." },
-            { code: "BPA", func: "Records audit details for changes made to program boilerplate text." },
-            { code: "CCH", func: "Stores the history of consent confirmations." },
-            { code: "CHE", func: "Defines elements for charts in SITS e:Vision Dashboards." },
-            { code: "CHR", func: "Defines resources related to Chart Groups in SITS e:Vision Dashboards." },
-            { code: "COA", func: "Defines additional parameters for Container Options in e:Vision Portal." },
-            { code: "DBV", func: "Menu System entity for database views." },
-            { code: "DMML", func: "Process screen for deleting Master Message Log (MML) records." },
-            { code: "EIL", func: "Menu System for viewing entity index lists." },
-            { code: "EQE", func: "Reference data for external qualifications and experience." },
-            { code: "EVH", func: "Stores help documentation content for e:Vision." },
-            { code: "FDP", func: "Reference data for configuring parameters used in fast decision making (Admissions)." },
-            { code: "FTY", func: "Defines record information related to file types." },
-            { code: "HCS", func: "Stores HESA Course data (Statutory Reporting)." },
-            { code: "HIN", func: "Stores HESA Instance Data for statutory returns." },
-            { code: "ISC", func: "Reference data for Incident Status Codes (Accessibility Assessment Management)." },
-            { code: "LMC", func: "User Menu option for listing the contents of a menu." },
-            { code: "LPU", func: "Tracks usage of Standard Letter Parameters (SLP)." },
-            { code: "MML", func: "Log of master messages in SITS/e:Vision." },
-            { code: "MOP", func: "Maintenance screen for defining menu options (Menu Maintenance)." },
-            { code: "MPW", func: "Stores Master User Password information (Supervisor Functions)." },
-            { code: "MVN", func: "Defines the occurrence name for Module Availability (MAV)." },
-            { code: "OBJ", func: "Defines the object template in the Process Manager Administration." },
-            { code: "PAG", func: "Utility used to link Containers (CON) to Container Pages (CPG) in e:Vision." },
-            { code: "TTU", func: "Used to run table updates (TUPs) from within a task." },
-            { code: "UGC", func: "Used to define and check user group permissions against program access levels (Run, Write, Delete)." },
-            { code: "UTL", func: "Logs web user transaction details." },
-            { code: "WTL", func: "Logs web transaction details." },
-            { code: "XACU", func: "Process screen for cleaning up audit records." }
-        ].map(item => ({
-            code: item.code.toUpperCase().trim(),
-            answer: item.code.toUpperCase().trim().replace(/[^A-Z0-9]/g, ''),
-            clue: item.func
-        }));
+        const DATA_URL = 'data/sits-codes.json';
+        let ITEMS = [];
+
+        function normalizeItems(items) {
+            return items.map(item => ({
+                code: item.code.toUpperCase().trim(),
+                answer: item.code.toUpperCase().trim().replace(/[^A-Z0-9]/g, ''),
+                clue: item.func
+            }));
+        }
+
+        async function loadItems() {
+            const response = await fetch(DATA_URL);
+            if (!response.ok) {
+                throw new Error(`Unable to load crossword data: ${response.status} ${response.statusText}`);
+            }
+
+            ITEMS = normalizeItems(await response.json());
+        }
 
         const DIR = { ACROSS: 0, DOWN: 1 };
 
@@ -1946,6 +1770,8 @@
         });
 
         E.loadDate.addEventListener('click', () => {
+            if (!ITEMS.length) return;
+
             const dateStr = E.datePick.value || todayStr();
             rebuildFor(dateStr);
         });
@@ -1956,9 +1782,28 @@
         E.hintFirst.addEventListener('click', hintFirstLetter);
         E.hintLast.addEventListener('click', hintLastLetter);
 
+        async function initializeApplication() {
+            E.datePick.value = todayStr();
+            E.loadDate.disabled = true;
+
+            try {
+                await loadItems();
+                E.loadDate.disabled = false;
+                rebuildFor(todayStr());
+            } catch (error) {
+                console.error('Error loading crossword data:', error);
+
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.textContent = 'Error loading crossword data. Please try again later.';
+                E.grid.replaceChildren(errorMessage);
+                E.across.replaceChildren();
+                E.down.replaceChildren();
+            }
+        }
+
         // ===== Initialize Application =====
-        E.datePick.value = todayStr();
-        rebuildFor(todayStr());
+        initializeApplication();
     </script>
 </body>
 
