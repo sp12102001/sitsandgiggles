@@ -226,6 +226,33 @@
             text-align: center;
         }
 
+        .clue-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 4px;
+        }
+
+        .grid-number-label {
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .share-status {
+            min-width: 160px;
+            align-self: center;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .share-status.error {
+            color: var(--bad);
+        }
+
         /* Clues section */
         .clues-section {
             background: var(--card);
@@ -257,7 +284,8 @@
 
         .clues-list {
             margin: 0;
-            padding-left: 20px;
+            padding-left: 0;
+            list-style: none;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -458,6 +486,8 @@
                 <button id="revealWord">Reveal selected word</button>
                 <button id="hintFirst">Hint: First letter</button>
                 <button id="hintLast">Hint: Last letter</button>
+                <button id="shareResults">Share results</button>
+                <span id="shareStatus" class="share-status" aria-live="polite"></span>
             </div>
             <div id="grid" class="grid" role="grid" aria-label="Crossword grid"></div>
         </section>
@@ -470,11 +500,11 @@
             <div class="clues-container">
                 <div>
                     <h3>Across</h3>
-                    <ol id="across" class="clues-list"></ol>
+                    <ul id="across" class="clues-list"></ul>
                 </div>
                 <div>
                     <h3>Down</h3>
-                    <ol id="down" class="clues-list"></ol>
+                    <ul id="down" class="clues-list"></ul>
                 </div>
             </div>
 
@@ -525,7 +555,9 @@
             revealWrong: document.getElementById('revealWrong'),
             revealWord: document.getElementById('revealWord'),
             hintFirst: document.getElementById('hintFirst'),
-            hintLast: document.getElementById('hintLast')
+            hintLast: document.getElementById('hintLast'),
+            shareResults: document.getElementById('shareResults'),
+            shareStatus: document.getElementById('shareStatus')
         };
 
         // ===== Application State =====
@@ -970,7 +1002,6 @@
         function renderClues() {
             function createClueItem(clue, direction) {
                 const li = document.createElement('li');
-                const label = `${clue.num}${direction.charAt(0)} — ${clue.len} letters`;
 
                 // Check word completion status
                 const wordStatus = getWordStatus(clue, direction);
@@ -981,24 +1012,28 @@
 
                 const labelEl = document.createElement('strong');
                 labelEl.className = 'clue-label';
-                labelEl.textContent = `${label}:`;
+
+                const gridNumber = document.createElement('span');
+                gridNumber.className = 'grid-number-label';
+                gridNumber.textContent = `Grid ${clue.num}${direction.charAt(0)}`;
+
+                const length = document.createElement('span');
+                length.textContent = `— ${clue.len} letters:`;
+
+                labelEl.append(gridNumber, ' ', length);
 
                 const clueText = document.createElement('span');
                 clueText.className = 'clue-text';
                 clueText.textContent = clue.clue;
 
-                const directionTag = document.createElement('span');
-                directionTag.className = 'direction-tag clue-direction-tag';
-                directionTag.textContent = direction;
-
                 const status = document.createElement('span');
                 status.className = 'status-icon clue-status-icon';
                 status.textContent = statusIcon;
 
-                content.append(labelEl, ' ', clueText, ' ', directionTag, ' ', status);
+                content.append(labelEl, ' ', clueText, ' ', status);
                 li.appendChild(content);
 
-                li.title = `Answer format: ${clue.code} | Click to highlight word`;
+                li.title = `Grid square ${clue.num}, ${direction}. Click to highlight word.`;
                 li.addEventListener('click', () => highlightWord(clue, direction));
                 li.classList.add('clue-item');
                 li.dataset.clueNum = clue.num;
@@ -1032,6 +1067,7 @@
             }
 
             saveProgress();
+            setShareStatus('');
             updateClueStatus(); // Update clue status indicators
 
             // Auto-advance to next cell when typing (immediate, no delay)
@@ -1634,6 +1670,116 @@
             return [...E.grid.querySelectorAll('input[data-row]')];
         }
 
+        // ===== Share Results =====
+        function getFormattedDate(dateStr) {
+            const d = new Date(dateStr + "T00:00:00");
+            return d.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function getShareGridRows() {
+            const { grid } = STATE;
+            const inputsByPosition = new Map(getInputs().map(input => [
+                `${input.dataset.row},${input.dataset.col}`,
+                input.value.toUpperCase()
+            ]));
+
+            return grid.map((row, rowIndex) => row.map((cell, colIndex) => {
+                if (cell === '#') return '⬛';
+
+                const value = inputsByPosition.get(`${rowIndex},${colIndex}`) || '';
+                if (!value) return '⬜';
+
+                return value === cell ? '🟩' : '🟧';
+            }).join(''));
+        }
+
+        function getShareStats() {
+            const answerMap = getAnswerMap();
+            let filled = 0;
+            let correct = 0;
+
+            for (const input of getInputs()) {
+                const value = input.value.toUpperCase();
+                if (!value) continue;
+
+                filled++;
+                if (value === answerMap.get(`${input.dataset.row},${input.dataset.col}`)) {
+                    correct++;
+                }
+            }
+
+            return { filled, correct, total: answerMap.size };
+        }
+
+        function buildShareText() {
+            const appName = 'SITS & Giggles';
+            const { filled, correct, total } = getShareStats();
+            const rows = getShareGridRows();
+
+            return [
+                appName,
+                getFormattedDate(STATE.date),
+                `${correct}/${total} correct · ${filled}/${total} filled`,
+                '',
+                ...rows,
+                '',
+                window.location.href.split('#')[0]
+            ].join('\n');
+        }
+
+        function setShareStatus(message, isError = false) {
+            E.shareStatus.textContent = message;
+            E.shareStatus.classList.toggle('error', isError);
+        }
+
+        function copyText(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                return navigator.clipboard.writeText(text);
+            }
+
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.setAttribute('readonly', '');
+            textArea.style.position = 'fixed';
+            textArea.style.top = '-9999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            const copied = document.execCommand('copy');
+            textArea.remove();
+
+            if (!copied) {
+                return Promise.reject(new Error('Clipboard copy failed'));
+            }
+
+            return Promise.resolve();
+        }
+
+        async function shareResults() {
+            if (!STATE.grid) return;
+
+            const text = buildShareText();
+
+            try {
+                if (navigator.share) {
+                    await navigator.share({ text });
+                    setShareStatus('Shared!');
+                    return;
+                }
+
+                await copyText(text);
+                setShareStatus('Copied results!');
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+
+                console.error('Error sharing results:', error);
+                setShareStatus('Could not share results.', true);
+            }
+        }
+
         // ===== Storage =====
         function saveProgress() {
             const cells = getInputs().map(input => ({
@@ -1699,6 +1845,7 @@
                 STATE.nums = numberGrid(grid);
                 STATE.clues = buildClues();
                 STATE.selectedCell = null;
+                setShareStatus('');
 
                 renderGrid();
                 renderClues();
@@ -1781,6 +1928,29 @@
         E.revealWord.addEventListener('click', revealCurrentWord);
         E.hintFirst.addEventListener('click', hintFirstLetter);
         E.hintLast.addEventListener('click', hintLastLetter);
+        E.shareResults.addEventListener('click', shareResults);
+
+        async function initializeApplication() {
+            E.datePick.value = todayStr();
+            E.loadDate.disabled = true;
+            E.shareResults.disabled = true;
+
+            try {
+                await loadItems();
+                E.loadDate.disabled = false;
+                E.shareResults.disabled = false;
+                rebuildFor(todayStr());
+            } catch (error) {
+                console.error('Error loading crossword data:', error);
+
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.textContent = 'Error loading crossword data. Please try again later.';
+                E.grid.replaceChildren(errorMessage);
+                E.across.replaceChildren();
+                E.down.replaceChildren();
+            }
+        }
 
         async function initializeApplication() {
             E.datePick.value = todayStr();
